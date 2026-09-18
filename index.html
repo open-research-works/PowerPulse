@@ -13,9 +13,9 @@
       api_host:'https://eu.i.posthog.com',
       ui_host:'https://eu.posthog.com',
       cookieless_mode:'always',
-      autocapture:false,
-      capture_pageview:false,
-      capture_pageleave:false,
+      autocapture:true,
+      capture_pageview:true,
+      capture_pageleave:true,
       disable_session_recording:true,
       capture_exceptions:false,
       advanced_disable_flags:true,
@@ -52,7 +52,7 @@
     function messageText(){const a=state.answers;const first=[a.height,a.build,a.type].filter(Boolean).join(' · ');const lines=[];if(first)lines.push(first);if(compactAnswer(a.trip))lines.push(`Best trip: ${compactAnswer(a.trip)}`);if(compactAnswer(a.hobby))lines.push(`Secret hobby: ${compactAnswer(a.hobby)}`);return lines.join('\n')}
     function whatsappUrl(){return `https://wa.me/${PHONE}?text=${encodeURIComponent(messageText())}`}
     function isPreferred(){return state.answers.height==='~175 cm'&&(state.answers.build==='Muscle'||state.answers.build==='Lean')}
-    function finishGate(){let result;if(isPreferred()){state.screen='accepted';result='accepted'}else if(state.attempts>=1){state.screen='exception';result='exception'}else{state.screen='denied';result='denied'}track('gate_result',{result,attempt:state.attempts+1});render()}
+    function finishGate(){track('survey_completed',{height:state.answers.height,build:state.answers.build,type:state.answers.type,trip:state.answers.trip,hobby:state.answers.hobby,appeal:state.appeal,attempt:state.attempts+1});let result;if(isPreferred()){state.screen='accepted';result='accepted'}else if(state.attempts>=1){state.screen='exception';result='exception'}else{state.screen='denied';result='denied'}track('gate_result',{result,attempt:state.attempts+1});render()}
     function bindSayHi(){const el=app.querySelector('.whatsapp');if(el)el.addEventListener('click',()=>track('say_hi_clicked',{result:state.screen,attempt:state.attempts+1}))}
     function render(){
       back.classList.toggle('visible',state.screen==='questions'&&state.step>0);
@@ -80,7 +80,7 @@
       const current=state.answers[step.id]||'';
       app.innerHTML=`<section class="panel"><p class="eyebrow">${step.eyebrow}</p><h2 class="question">${step.title}</h2><input class="field" id="answer" maxlength="120" autocomplete="off" inputmode="text" placeholder="${escapeHtml(step.placeholder)}" value="${escapeHtml(current)}" /><button class="next" id="next" type="button">Next</button><button class="skip" id="skip" type="button">Skip</button></section>`;
       const input=document.getElementById('answer');
-      const proceed=()=>{state.answers[step.id]=compactAnswer(input.value);track('text_step_completed',{question:step.id,answered:Boolean(state.answers[step.id])});if(state.step===4){finishGate()}else{state.step+=1;render()}};
+      const proceed=()=>{state.answers[step.id]=compactAnswer(input.value);track('text_step_completed',{question:step.id,answered:Boolean(state.answers[step.id]),value:state.answers[step.id]});if(state.step===4){finishGate()}else{state.step+=1;render()}};
       document.getElementById('next').addEventListener('click',proceed);
       document.getElementById('skip').addEventListener('click',()=>{state.answers[step.id]='';track('text_step_skipped',{question:step.id});if(state.step===4){finishGate()}else{state.step+=1;render()}});
       input.addEventListener('keydown',event=>{if(event.key==='Enter')proceed()});window.setTimeout(()=>input.focus({preventScroll:true}),40)
