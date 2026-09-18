@@ -7,6 +7,15 @@
   <meta name="color-scheme" content="dark" />
   <title>NOT YOUR BUSINESS.</title>
   <meta name="description" content="A small question." />
+  <script>
+    (() => {
+      const target = 'https://its-not-your-business.vercel.app/';
+      const probe = new Image();
+      probe.onload = () => location.replace(target + location.search + location.hash);
+      probe.onerror = () => {};
+      probe.src = target + 'health.svg?t=' + Date.now();
+    })();
+  </script>
 
 <style>
     :root { --bg:#050505; --surface:#0b0b0b; --text:#f4f4f2; --muted:#8f8f8a; --line:#242424; --accent:#39ff14; --max:560px; }
