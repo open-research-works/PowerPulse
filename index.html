@@ -47,7 +47,7 @@
     function progressMarkup(){const max=state.appeal?3:5;const activeIndex=Math.min(state.step,max-1);return Array.from({length:max},(_,i)=>{const klass=i<activeIndex?'dot done':i===activeIndex?'dot active':'dot';return `<span class="${klass}" aria-hidden="true"></span>`}).join('')}
     function messageText(){const a=state.answers;const first=[a.height,a.build,a.type].filter(Boolean).join(' · ');const lines=[];if(first)lines.push(first);if(compactAnswer(a.trip))lines.push(`Beste Reise: ${compactAnswer(a.trip)}`);if(compactAnswer(a.hobby))lines.push(`Hobby: ${compactAnswer(a.hobby)}`);return lines.join('\n')}
     function whatsappUrl(){return `https://wa.me/${PHONE}?text=${encodeURIComponent(messageText())}`}
-    function isPreferred(){return state.answers.height==='~175 cm'&&(state.answers.build==='Muscle'||state.answers.build==='Lean')}
+    function isPreferred(){return state.answers.height==='~175 cm'&&(state.answers.build==='Muskulös'||state.answers.build==='Schlank')}
     function finishGate(){track('survey_completed',{height:state.answers.height,build:state.answers.build,type:state.answers.type,trip:state.answers.trip,hobby:state.answers.hobby,appeal:state.appeal,attempt:state.attempts+1});let result;if(isPreferred()){state.screen='accepted';result='accepted'}else if(state.attempts>=1){state.screen='exception';result='exception'}else{state.screen='denied';result='denied'}track('gate_result',{result,attempt:state.attempts+1});render()}
     function bindSayHi(){const el=app.querySelector('.whatsapp');if(el)el.addEventListener('click',()=>track('say_hi_clicked',{result:state.screen,attempt:state.attempts+1}))}
     function render(){
@@ -59,7 +59,7 @@
       }
       if(state.screen==='exception'){
         trackView('exception',{attempt:state.attempts+1});
-        app.innerHTML=`<section class="panel final"><p class="eyebrow">APPEAL ACCEPTED.</p><h1>Fine. We'll make an exception<span class="period">.</span></h1><p class="sub">Geschafft.</p><a class="whatsapp" href="${whatsappUrl()}">Sag Hallo</a></section>`;bindSayHi();return
+        app.innerHTML=`<section class="panel final"><p class="eyebrow">EINSPRUCH ANGENOMMEN.</p><h1>Na gut. Wir machen eine Ausnahme<span class="period">.</span></h1><p class="sub">Geschafft.</p><a class="whatsapp" href="${whatsappUrl()}">Sag Hallo</a></section>`;bindSayHi();return
       }
       if(state.screen==='denied'){
         trackView('denied',{attempt:state.attempts+1});
