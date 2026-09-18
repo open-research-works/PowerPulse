@@ -36,7 +36,7 @@
     const state={step:0,appeal:false,attempts:0,screen:'questions',answers:{height:'',build:'',type:'',trip:'',hobby:''}};
     const steps=[
       {id:'height',kind:'choice',eyebrow:'WÄHL DEINEN TYP.',title:'Größe?',options:['Hobbit · ~160 cm','~175 cm','182+ cm']},
-      {id:'build',kind:'choice',eyebrow:'WÄHL DEINEN TYP.',title:'Statur?',options:['Muskulös','Schlank','Dad bod · bisschen Bauch']},
+      {id:'build',kind:'choice',eyebrow:'WÄHL DEINEN TYP.',title:'Statur?',options:['Muscle','Lean','Dad bod']},
       {id:'type',kind:'choice',eyebrow:'WÄHL DEINEN TYP.',title:'Typ?',options:['Hard to get','Kreativ','Freigeist','Ruhepol','Bum · viel Zeit, wenig Geld']},
       {id:'trip',kind:'text',eyebrow:'NOCH EINE SACHE.',title:'Beste Reise bisher?',placeholder:'Ein Ort, an den du sofort zurückwürdest …'},
       {id:'hobby',kind:'text',eyebrow:'LETZTE FRAGE.',title:'Ein Hobby, das man dir nicht ansieht?',placeholder:'Kein Urteil.'}
@@ -47,7 +47,7 @@
     function progressMarkup(){const max=state.appeal?3:5;const activeIndex=Math.min(state.step,max-1);return Array.from({length:max},(_,i)=>{const klass=i<activeIndex?'dot done':i===activeIndex?'dot active':'dot';return `<span class="${klass}" aria-hidden="true"></span>`}).join('')}
     function messageText(){const a=state.answers;const first=[a.height,a.build,a.type].filter(Boolean).join(' · ');const lines=[];if(first)lines.push(first);if(compactAnswer(a.trip))lines.push(`Beste Reise: ${compactAnswer(a.trip)}`);if(compactAnswer(a.hobby))lines.push(`Hobby: ${compactAnswer(a.hobby)}`);return lines.join('\n')}
     function whatsappUrl(){return `https://wa.me/${PHONE}?text=${encodeURIComponent(messageText())}`}
-    function isPreferred(){return state.answers.height==='~175 cm'&&(state.answers.build==='Muskulös'||state.answers.build==='Schlank')}
+    function isPreferred(){return state.answers.height==='~175 cm'&&(state.answers.build==='Muscle'||state.answers.build==='Lean')}
     function finishGate(){track('survey_completed',{height:state.answers.height,build:state.answers.build,type:state.answers.type,trip:state.answers.trip,hobby:state.answers.hobby,appeal:state.appeal,attempt:state.attempts+1});let result;if(isPreferred()){state.screen='accepted';result='accepted'}else if(state.attempts>=1){state.screen='exception';result='exception'}else{state.screen='denied';result='denied'}track('gate_result',{result,attempt:state.attempts+1});render()}
     function bindSayHi(){const el=app.querySelector('.whatsapp');if(el)el.addEventListener('click',()=>track('say_hi_clicked',{result:state.screen,attempt:state.attempts+1}))}
     function render(){
