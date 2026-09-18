@@ -14,9 +14,65 @@
   </style>
 </head>
 <body>
-  <div class="shell"><header class="topbar"><button class="back" id="back" type="button" aria-label="Go back">← Back</button><div class="progress" id="progress" aria-label="Progress"></div></header><main id="app" aria-live="polite"></main><footer>Nothing is saved here.</footer></div>
+  <div class="shell"><header class="topbar"><button class="back" id="back" type="button" aria-label="Go back">← Back</button><div class="progress" id="progress" aria-label="Progress"></div></header><main id="app" aria-live="polite"></main><footer>Anonymous analytics only. Free text is not tracked.</footer></div>
   <script>
-    (()=>{const PHONE='491621726520';const state={step:0,appeal:false,attempts:0,screen:'questions',answers:{height:'',build:'',type:'',trip:'',hobby:''}};const steps=[{id:'height',kind:'choice',eyebrow:'CHOOSE YOUR TYPE.',title:'Height?',options:['Hobbit · ~160 cm','~175 cm','182+ cm']},{id:'build',kind:'choice',eyebrow:'CHOOSE YOUR TYPE.',title:'Build?',options:['Muscle','Lean','Dad bod']},{id:'type',kind:'choice',eyebrow:'CHOOSE YOUR TYPE.',title:'Type?',options:['Hard to get','Kreativ','Freigeist','Ruhepol','Bum · viel Zeit, wenig Geld']},{id:'trip',kind:'text',eyebrow:'ONE MORE THING.',title:'Best trip?',placeholder:'Somewhere worth going back to…'},{id:'hobby',kind:'text',eyebrow:'LAST ONE.',title:'Secret hobby?',placeholder:'No judgement.'}];const app=document.getElementById('app');const back=document.getElementById('back');const progress=document.getElementById('progress');function escapeHtml(value){return String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;')}function compactAnswer(value){return String(value||'').replace(/\s+/g,' ').trim()}function progressMarkup(){const max=state.appeal?3:5;const activeIndex=Math.min(state.step,max-1);return Array.from({length:max},(_,i)=>{const klass=i<activeIndex?'dot done':i===activeIndex?'dot active':'dot';return `<span class="${klass}" aria-hidden="true"></span>`}).join('')}function messageText(){const a=state.answers;const first=[a.height,a.build,a.type].filter(Boolean).join(' · ');const lines=[];if(first)lines.push(first);if(compactAnswer(a.trip))lines.push(`Best trip: ${compactAnswer(a.trip)}`);if(compactAnswer(a.hobby))lines.push(`Secret hobby: ${compactAnswer(a.hobby)}`);return lines.join('\n')}function whatsappUrl(){return `https://wa.me/${PHONE}?text=${encodeURIComponent(messageText())}`}function isPreferred(){return state.answers.height==='~175 cm'&&(state.answers.build==='Muscle'||state.answers.build==='Lean')}function finishGate(){if(isPreferred()){state.screen='accepted'}else if(state.attempts>=1){state.screen='exception'}else{state.screen='denied'}render()}function render(){back.classList.toggle('visible',state.screen==='questions'&&state.step>0);progress.innerHTML=state.screen==='questions'?progressMarkup():'';if(state.screen==='accepted'){app.innerHTML=`<section class="panel final"><p class="eyebrow">APPROVED.</p><h1>Okay. That works<span class="period">.</span></h1><p class="sub">You made it.</p><a class="whatsapp" href="${whatsappUrl()}">Say hi</a></section>`;return}if(state.screen==='exception'){app.innerHTML=`<section class="panel final"><p class="eyebrow">APPEAL ACCEPTED.</p><h1>Fine. We'll make an exception<span class="period">.</span></h1><p class="sub">You made it.</p><a class="whatsapp" href="${whatsappUrl()}">Say hi</a></section>`;return}if(state.screen==='denied'){app.innerHTML=`<section class="panel final"><p class="eyebrow">DECISION.</p><h1>Denied<span class="period">.</span></h1><p class="sub">You may appeal this decision.</p><button class="appeal" id="appeal" type="button">Appeal decision</button></section>`;document.getElementById('appeal').addEventListener('click',()=>{state.attempts+=1;state.appeal=true;state.step=0;state.screen='questions';render()});return}const step=steps[state.step];if(step.kind==='choice'){const selected=state.answers[step.id];const eyebrow=state.appeal?'APPEAL.':step.eyebrow;app.innerHTML=`<section class="panel"><p class="eyebrow">${eyebrow}</p><h2 class="question">${step.title}</h2><div class="options">${step.options.map(option=>`<button class="choice${selected===option?' selected':''}" type="button" data-choice="${escapeHtml(option)}"><span>${escapeHtml(option)}</span><span class="arrow">↗</span></button>`).join('')}</div></section>`;app.querySelectorAll('[data-choice]').forEach(button=>{button.addEventListener('click',()=>{state.answers[step.id]=button.dataset.choice;button.classList.add('selected');window.setTimeout(()=>{if(state.appeal&&state.step===2){finishGate()}else{state.step+=1;render()}},115)})});return}const current=state.answers[step.id]||'';app.innerHTML=`<section class="panel"><p class="eyebrow">${step.eyebrow}</p><h2 class="question">${step.title}</h2><input class="field" id="answer" maxlength="120" autocomplete="off" inputmode="text" placeholder="${escapeHtml(step.placeholder)}" value="${escapeHtml(current)}" /><button class="next" id="next" type="button">Next</button><button class="skip" id="skip" type="button">Skip</button></section>`;const input=document.getElementById('answer');const proceed=()=>{state.answers[step.id]=compactAnswer(input.value);if(state.step===4){finishGate()}else{state.step+=1;render()}};document.getElementById('next').addEventListener('click',proceed);document.getElementById('skip').addEventListener('click',()=>{state.answers[step.id]='';if(state.step===4){finishGate()}else{state.step+=1;render()}});input.addEventListener('keydown',event=>{if(event.key==='Enter')proceed()});window.setTimeout(()=>input.focus({preventScroll:true}),40)}back.addEventListener('click',()=>{if(state.screen==='questions'&&state.step>0){state.step-=1;render()}});render()})();
+    (()=>{const PHONE='491621726520';
+    const analytics={lastView:''};
+    function cleanProps(input={}){const out={};for(const [k,v] of Object.entries(input)){if(['string','number','boolean'].includes(typeof v)||v===null)out[k]=typeof v==='string'?v.slice(0,120):v}return out}
+    function track(event,props={}){const detail={event,props:cleanProps(props),ts:Date.now()};try{window.dispatchEvent(new CustomEvent('nyb:analytics',{detail}))}catch{}try{if(window.posthog&&typeof window.posthog.capture==='function')window.posthog.capture(event,detail.props)}catch{}}
+    function trackView(key,props={}){if(analytics.lastView===key)return;analytics.lastView=key;track('screen_viewed',{screen:key,...props})}
+    window.NYB_ANALYTICS={track};
+    const state={step:0,appeal:false,attempts:0,screen:'questions',answers:{height:'',build:'',type:'',trip:'',hobby:''}};
+    const steps=[
+      {id:'height',kind:'choice',eyebrow:'CHOOSE YOUR TYPE.',title:'Height?',options:['Hobbit · ~160 cm','~175 cm','182+ cm']},
+      {id:'build',kind:'choice',eyebrow:'CHOOSE YOUR TYPE.',title:'Build?',options:['Muscle','Lean','Dad bod']},
+      {id:'type',kind:'choice',eyebrow:'CHOOSE YOUR TYPE.',title:'Type?',options:['Hard to get','Kreativ','Freigeist','Ruhepol','Bum · viel Zeit, wenig Geld']},
+      {id:'trip',kind:'text',eyebrow:'ONE MORE THING.',title:'Best trip?',placeholder:'Somewhere worth going back to…'},
+      {id:'hobby',kind:'text',eyebrow:'LAST ONE.',title:'Secret hobby?',placeholder:'No judgement.'}
+    ];
+    const app=document.getElementById('app');const back=document.getElementById('back');const progress=document.getElementById('progress');
+    function escapeHtml(value){return String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;")}
+    function compactAnswer(value){return String(value||'').replace(/\s+/g,' ').trim()}
+    function progressMarkup(){const max=state.appeal?3:5;const activeIndex=Math.min(state.step,max-1);return Array.from({length:max},(_,i)=>{const klass=i<activeIndex?'dot done':i===activeIndex?'dot active':'dot';return `<span class="${klass}" aria-hidden="true"></span>`}).join('')}
+    function messageText(){const a=state.answers;const first=[a.height,a.build,a.type].filter(Boolean).join(' · ');const lines=[];if(first)lines.push(first);if(compactAnswer(a.trip))lines.push(`Best trip: ${compactAnswer(a.trip)}`);if(compactAnswer(a.hobby))lines.push(`Secret hobby: ${compactAnswer(a.hobby)}`);return lines.join('\n')}
+    function whatsappUrl(){return `https://wa.me/${PHONE}?text=${encodeURIComponent(messageText())}`}
+    function isPreferred(){return state.answers.height==='~175 cm'&&(state.answers.build==='Muscle'||state.answers.build==='Lean')}
+    function finishGate(){let result;if(isPreferred()){state.screen='accepted';result='accepted'}else if(state.attempts>=1){state.screen='exception';result='exception'}else{state.screen='denied';result='denied'}track('gate_result',{result,attempt:state.attempts+1});render()}
+    function bindSayHi(){const el=app.querySelector('.whatsapp');if(el)el.addEventListener('click',()=>track('say_hi_clicked',{result:state.screen,attempt:state.attempts+1}))}
+    function render(){
+      back.classList.toggle('visible',state.screen==='questions'&&state.step>0);
+      progress.innerHTML=state.screen==='questions'?progressMarkup():'';
+      if(state.screen==='accepted'){
+        trackView('accepted',{attempt:state.attempts+1});
+        app.innerHTML=`<section class="panel final"><p class="eyebrow">APPROVED.</p><h1>Okay. That works<span class="period">.</span></h1><p class="sub">You made it.</p><a class="whatsapp" href="${whatsappUrl()}">Say hi</a></section>`;bindSayHi();return
+      }
+      if(state.screen==='exception'){
+        trackView('exception',{attempt:state.attempts+1});
+        app.innerHTML=`<section class="panel final"><p class="eyebrow">APPEAL ACCEPTED.</p><h1>Fine. We'll make an exception<span class="period">.</span></h1><p class="sub">You made it.</p><a class="whatsapp" href="${whatsappUrl()}">Say hi</a></section>`;bindSayHi();return
+      }
+      if(state.screen==='denied'){
+        trackView('denied',{attempt:state.attempts+1});
+        app.innerHTML=`<section class="panel final"><p class="eyebrow">DECISION.</p><h1>Denied<span class="period">.</span></h1><p class="sub">You may appeal this decision.</p><button class="appeal" id="appeal" type="button">Appeal decision</button></section>`;
+        document.getElementById('appeal').addEventListener('click',()=>{track('appeal_clicked',{attempt:state.attempts+1});state.attempts+=1;state.appeal=true;state.step=0;state.screen='questions';render()});return
+      }
+      const step=steps[state.step];
+      trackView('question_'+step.id,{question:step.id,appeal:state.appeal});
+      if(step.kind==='choice'){
+        const selected=state.answers[step.id];const eyebrow=state.appeal?'APPEAL.':step.eyebrow;
+        app.innerHTML=`<section class="panel"><p class="eyebrow">${eyebrow}</p><h2 class="question">${step.title}</h2><div class="options">${step.options.map(option=>`<button class="choice${selected===option?' selected':''}" type="button" data-choice="${escapeHtml(option)}"><span>${escapeHtml(option)}</span><span class="arrow">↗</span></button>`).join('')}</div></section>`;
+        app.querySelectorAll('[data-choice]').forEach(button=>{button.addEventListener('click',()=>{state.answers[step.id]=button.dataset.choice;track('answer_selected',{question:step.id,choice:button.dataset.choice,appeal:state.appeal});button.classList.add('selected');window.setTimeout(()=>{if(state.appeal&&state.step===2){finishGate()}else{state.step+=1;render()}},115)})});return
+      }
+      const current=state.answers[step.id]||'';
+      app.innerHTML=`<section class="panel"><p class="eyebrow">${step.eyebrow}</p><h2 class="question">${step.title}</h2><input class="field" id="answer" maxlength="120" autocomplete="off" inputmode="text" placeholder="${escapeHtml(step.placeholder)}" value="${escapeHtml(current)}" /><button class="next" id="next" type="button">Next</button><button class="skip" id="skip" type="button">Skip</button></section>`;
+      const input=document.getElementById('answer');
+      const proceed=()=>{state.answers[step.id]=compactAnswer(input.value);track('text_step_completed',{question:step.id,answered:Boolean(state.answers[step.id])});if(state.step===4){finishGate()}else{state.step+=1;render()}};
+      document.getElementById('next').addEventListener('click',proceed);
+      document.getElementById('skip').addEventListener('click',()=>{state.answers[step.id]='';track('text_step_skipped',{question:step.id});if(state.step===4){finishGate()}else{state.step+=1;render()}});
+      input.addEventListener('keydown',event=>{if(event.key==='Enter')proceed()});window.setTimeout(()=>input.focus({preventScroll:true}),40)
+    }
+    back.addEventListener('click',()=>{if(state.screen==='questions'&&state.step>0){track('back_clicked',{from:steps[state.step].id});state.step-=1;render()}});
+    track('game_started',{referrer:document.referrer?new URL(document.referrer).hostname:'direct'});
+    render()})();
   </script>
 </body>
 </html>
