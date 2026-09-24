@@ -228,7 +228,7 @@
       trackView('romantic_profile');
       const a=state.answers;const ready=a.height&&a.build&&a.type&&a.vibe;
       const group=(label,key,values,layout,first)=>`<div><p class="section-label"${first?' style="margin-top:0"':''}>${label}</p><div class="${layout}">${values.map(v=>`<button class="${layout==='chips'?'chip':'mini'}${a[key]===v?' selected':''}" type="button" data-profile="${key}" data-value="${escapeHtml(v)}">${escapeHtml(v).replace(' cm','&nbsp;cm')}</button>`).join('')}</div></div>`;
-      app.innerHTML=`<section class="panel"><p class="eyebrow">JUST CURIOUS.</p><h2 class="question">Ein paar Details<span class="period">.</span></h2><div class="split">${group('Größe?','height',HEIGHTS,'compact-options three',true)}${group('Statur?','build',BUILDS,'compact-options three')}${group('Typ?','type',TYPES,'chips')}${group('What sounds better?','vibe',VIBES,'chips')}</div><button class="next" id="profile-next" type="button" ${ready?'':'disabled'}>Weiter</button></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">PREFERRED TYPE.</p><h2 class="question">Was ist eher dein Typ<span class="period">?</span></h2><div class="split">${group('Größe?','height',HEIGHTS,'compact-options three',true)}${group('Statur?','build',BUILDS,'compact-options three')}${group('Typ?','type',TYPES,'chips')}${group('What sounds better?','vibe',VIBES,'chips')}</div><button class="next" id="profile-next" type="button" ${ready?'':'disabled'}>Weiter</button></section>`;
       app.querySelectorAll('[data-profile]').forEach(b=>b.addEventListener('click',()=>{state.answers[b.dataset.profile]=b.dataset.value;track('answer_selected',{question:b.dataset.profile,choice:b.dataset.value});sfx('select');render()}));
       document.getElementById('profile-next')?.addEventListener('click',()=>{track('attraction_answered',{height:a.height,build:a.build,type:a.type,vibe:a.vibe});go('talent')});
     }
@@ -273,7 +273,7 @@
       const a=state.answers;const rows=[['Traveler',travelerLine()]];
       if(a.talent)rows.push(['Secret talent',a.talent]);
       if(isRomantic()){
-        rows.push(['Details',[a.height,a.build,a.type].filter(Boolean).join(' · ')]);
+        rows.push(['Preferred type',[a.height,a.build,a.type].filter(Boolean).join(' · ')]);
         rows.push(['Vibe',a.vibe]);
         rows.push(['Difficulty',a.difficulty]);
         if(a.scene)rows.push(['Scene',a.scene]);
