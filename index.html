@@ -175,9 +175,9 @@
     function className(){const maxed=Object.entries(state.answers.stats).filter(([,v])=>v===5).map(([k])=>k);return maxed.length===2?(CLASS_NAMES[maxed.join('+')]||''):''}
 
     function expectedScreens(){
-      if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','talent','stats','interests','romantic-profile','difficulty','romantic-quest','final'];
-      if(state.answers.identity==='She'&&state.answers.path==='quest')return ['identity','path','talent','stats','interests','values','quest','final'];
-      if(state.answers.identity==='He')return ['identity','talent','stats','interests','values','quest','final'];
+      if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','stats','interests','talent','romantic-profile','difficulty','romantic-quest','final'];
+      if(state.answers.identity==='She'&&state.answers.path==='quest')return ['identity','path','stats','interests','talent','values','quest','final'];
+      if(state.answers.identity==='He')return ['identity','stats','interests','talent','values','quest','final'];
       return ['identity'];
     }
     function updateHud(){
@@ -195,24 +195,23 @@
     function renderIdentity(){
       trackView('identity');
       app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h1>Who are you<span class="period">?</span></h1><p class="lede">Character assessment in progress.<br>Quest locked.</p><div class="options"><button class="choice" type="button" data-identity="She"><span>She</span><span class="arrow">↗</span></button><button class="choice" type="button" data-identity="He"><span>He</span><span class="arrow">↗</span></button></div></section>`;
-      app.querySelectorAll('[data-identity]').forEach(b=>b.addEventListener('click',()=>{resetForIdentity();state.answers.identity=b.dataset.identity;track('gender_selected',{identity:b.dataset.identity});sfx('select');setTimeout(()=>{if(b.dataset.identity==='She')go('path');else{state.answers.path='quest';go('talent')}},105)}));
+      app.querySelectorAll('[data-identity]').forEach(b=>b.addEventListener('click',()=>{resetForIdentity();state.answers.identity=b.dataset.identity;track('gender_selected',{identity:b.dataset.identity});sfx('select');setTimeout(()=>{if(b.dataset.identity==='She')go('path');else{state.answers.path='quest';go('stats')}},105)}));
     }
 
     function renderPath(){
       trackView('path');
       app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h2 class="question">Choose your path, traveler<span class="period">.</span></h2><div class="options"><button class="choice" type="button" data-path="romantic"><span>Secretly romantic.</span><span class="arrow">↗</span></button><button class="choice" type="button" data-path="quest"><span>I am here to embark on a quest.</span><span class="arrow">↗</span></button></div></section>`;
-      app.querySelectorAll('[data-path]').forEach(b=>b.addEventListener('click',()=>{const a=state.answers;if(a.path&&a.path!==b.dataset.path){a.moral='';a.height='';a.build='';a.type='';a.vibe='';a.difficulty='';a.quest='';state.appealed=false}a.path=b.dataset.path;track('path_selected',{path:b.dataset.path});sfx('select');setTimeout(()=>go('talent'),105)}));
+      app.querySelectorAll('[data-path]').forEach(b=>b.addEventListener('click',()=>{const a=state.answers;if(a.path&&a.path!==b.dataset.path){a.moral='';a.height='';a.build='';a.type='';a.vibe='';a.difficulty='';a.quest='';state.appealed=false}a.path=b.dataset.path;track('path_selected',{path:b.dataset.path});sfx('select');setTimeout(()=>go('stats'),105)}));
     }
 
     function renderTalent(){
       trackView('talent',{path:state.answers.path});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR STAT</p><h2 class="question">What are you unusually good at<span class="period">?</span></h2><input class="field" id="talent" maxlength="120" autocomplete="off" enterkeyhint="next" placeholder="Etwas, das man dir nicht ansieht …" value="${escapeHtml(state.answers.talent)}" /><p class="counter" id="talent-count">${state.answers.talent.length} / 120</p><button class="next" id="talent-next" type="button" ${state.answers.talent?'':'disabled'}>Weiter</button><button class="skip" id="talent-skip" type="button">Bleibt geheim.</button></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR STAT</p><h2 class="question">What are you unusually good at<span class="period">?</span></h2><input class="field" id="talent" maxlength="120" autocomplete="off" enterkeyhint="next" placeholder="Etwas, das man dir nicht ansieht …" value="${escapeHtml(state.answers.talent)}" /><p class="counter" id="talent-count">${state.answers.talent.length} / 120</p><button class="next" id="talent-next" type="button">${state.answers.talent?'Weiter':'Bleibt geheim.'}</button></section>`;
       const input=document.getElementById('talent');const count=document.getElementById('talent-count');const next=document.getElementById('talent-next');
-      const done=(skipped)=>{state.answers.talent=skipped?'':compact(input.value);track('stat_text_completed',{talent:state.answers.talent,skipped,length:state.answers.talent.length});go('stats')};
-      input.addEventListener('input',()=>{count.textContent=`${input.value.length} / 120`;next.disabled=!compact(input.value)});
-      input.addEventListener('keydown',e=>{if(e.key==='Enter'&&compact(input.value)){e.preventDefault();done(false)}});
-      next.addEventListener('click',()=>done(false));
-      document.getElementById('talent-skip').addEventListener('click',()=>{input.value='';done(true)});
+      const done=()=>{state.answers.talent=compact(input.value);const skipped=!state.answers.talent;track('stat_text_completed',{talent:state.answers.talent,skipped,length:state.answers.talent.length});go(isRomantic()?'romantic-profile':'values')};
+      input.addEventListener('input',()=>{count.textContent=`${input.value.length} / 120`;next.textContent=compact(input.value)?'Weiter':'Bleibt geheim.'});
+      input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();done()}});
+      next.addEventListener('click',done);
     }
 
     function renderStats(){
@@ -227,7 +226,7 @@
       trackView('interests',{path:state.answers.path});
       app.innerHTML=`<section class="panel"><p class="eyebrow">CHOOSE YOUR INTERESTS</p><h2 class="question">Pack deine Ausrüstung<span class="period">.</span></h2><p class="hint${state.interestsFull?' danger':''}">${state.interestsFull?'Ausrüstung voll.':'Bis zu 4.'}</p><div class="chips" style="margin-top:22px">${INTERESTS.map(v=>`<button class="chip${state.answers.interests.includes(v)?' selected':''}" type="button" data-interest="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('')}</div><button class="next" id="interests-next" type="button" ${state.answers.interests.length<1?'disabled':''}>Weiter</button></section>`;
       app.querySelectorAll('[data-interest]').forEach(b=>b.addEventListener('click',()=>{const v=b.dataset.interest;const a=state.answers.interests;const i=a.indexOf(v);if(i>=0)a.splice(i,1);else if(a.length<4)a.push(v);else{state.interestsFull=true;sfx('fail');render();return}state.interestsFull=false;track('interest_toggled',{interest:v,selected:i<0,interests:a});sfx('select');render()}));
-      document.getElementById('interests-next')?.addEventListener('click',()=>{state.interestsFull=false;track('interests_selected',{interests:state.answers.interests,count:state.answers.interests.length});go(isRomantic()?'romantic-profile':'values')});
+      document.getElementById('interests-next')?.addEventListener('click',()=>{state.interestsFull=false;track('interests_selected',{interests:state.answers.interests,count:state.answers.interests.length});go('talent')});
     }
 
     function renderValues(){
