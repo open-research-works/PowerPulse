@@ -91,6 +91,8 @@
       font-size:clamp(21px,5.4vw,29px);letter-spacing:-.02em;caret-color:var(--accent);transition:border-color .16s ease;
     }
     .field:focus{border-color:var(--accent)}.field::placeholder{color:#4d4d49}
+    .counter{margin-top:8px;color:var(--dim);font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
+    .build{min-height:18px;margin-top:8px;color:var(--accent);font-size:13px;letter-spacing:.02em}
     .section-label{margin:25px 0 10px;color:var(--muted);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:680}
     .chips{display:flex;flex-wrap:wrap;gap:8px}
     .chip{
@@ -105,7 +107,7 @@
     .danger{color:var(--danger)}
     .final h1{margin-bottom:19px}.final .lede{margin-top:0}.micro{margin-top:17px;color:#62625c;font-size:12px;line-height:1.5}
     footer{min-height:18px;color:#3d3d39;font-size:10px;letter-spacing:.05em}
-    @media(max-width:410px){.compact-options.three{grid-template-columns:1fr}.compact-options{grid-template-columns:1fr}.shell{padding-left:18px;padding-right:18px}}
+    @media(max-width:410px){.compact-options.three{grid-template-columns:repeat(3,minmax(0,1fr))}.compact-options{grid-template-columns:1fr}.mini{font-size:14px;padding:10px 6px}.shell{padding-left:18px;padding-right:18px}}
     @media(min-width:680px){.shell{padding-left:10px;padding-right:10px}main{padding-bottom:72px}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
   </style>
@@ -113,7 +115,7 @@
 <body>
   <div class="shell">
     <header class="topbar">
-      <button class="back" id="back" type="button" aria-label="Back">← Back</button>
+      <button class="back" id="back" type="button" aria-label="Zurück">← Zurück</button>
       <div class="hud"><span class="step" id="step"></span><button class="sfx" id="sfx" type="button" aria-label="Toggle sound">SFX</button></div>
     </header>
     <main id="app" aria-live="polite"></main>
@@ -129,10 +131,8 @@
     const sfxEl=document.getElementById('sfx');
 
     const initialStats=()=>({Brains:0,Courage:0,Charm:0,Stamina:0,Chaos:0});
-    const state={
-      screen:'identity',history:[],sound:true,appealed:false,
-      answers:{identity:'',path:'',stats:initialStats(),interests:[],talent:'',moral:'',height:'',build:'',nature:'',difficulty:'',role:'',quest:''}
-    };
+    const initialAnswers=()=>({identity:'',path:'',stats:initialStats(),interests:[],talent:'',moral:'',height:'',build:'',type:'',vibe:'',difficulty:'',quest:''});
+    const state={screen:'identity',history:[],sound:true,appealed:false,interestsFull:false,answers:initialAnswers()};
 
     const analytics={lastView:''};
     function cleanProps(input={}){const out={};for(const [k,v] of Object.entries(input)){if(['string','number','boolean'].includes(typeof v)||v===null)out[k]=typeof v==='string'?v.slice(0,500):v;else if(Array.isArray(v))out[k]=v.slice(0,12).map(x=>String(x).slice(0,120));else if(v&&typeof v==='object')out[k]=JSON.stringify(v).slice(0,1000)}return out}
@@ -143,20 +143,26 @@
     let audioCtx=null;
     function audio(){if(!state.sound)return null;try{audioCtx ||= new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx}catch{return null}}
     function tone(freq,duration=.055,type='sine',gain=.022,delay=0){const ctx=audio();if(!ctx)return;const o=ctx.createOscillator();const g=ctx.createGain();const t=ctx.currentTime+delay;o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(gain,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+duration);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+duration+.02)}
+    function sweep(from,to,duration=.09,gain=.008){const ctx=audio();if(!ctx)return;const o=ctx.createOscillator();const g=ctx.createGain();const t=ctx.currentTime;o.type='sine';o.frequency.setValueAtTime(from,t);o.frequency.exponentialRampToValueAtTime(to,t+duration);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(gain,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+duration);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+duration+.02)}
     function sfx(kind='select'){
       if(!state.sound)return;
       if(kind==='select'){tone(760,.045,'sine',.017);navigator.vibrate?.(12)}
-      else if(kind==='next'){tone(520,.04,'sine',.012);tone(690,.055,'sine',.012,.035)}
+      else if(kind==='next'){sweep(360,620)}
       else if(kind==='fail'){tone(170,.14,'square',.018);setTimeout(()=>tone(105,.17,'square',.014),70);navigator.vibrate?.([20,35,20])}
       else if(kind==='unlock'){tone(620,.075,'sine',.018);tone(920,.12,'sine',.02,.07);navigator.vibrate?.(18)}
+      else if(kind==='success'){tone(880,.08,'sine',.02);tone(1320,.16,'sine',.018,.085);navigator.vibrate?.(18)}
     }
 
-    const INTERESTS=['Coding','Sports','Gaming','Art / Music','Outdoors','Business','Building stuff','Aura farming'];
+    const INTERESTS=['Coding','Sports','Gaming','Creative','Art','Music','Outdoors','Business','Building stuff','Aura farming'];
     const MORALS=['Without hesitation.','Depends what we\'re fighting for.','I\'d rather outsmart them.','I\'m not dying for a side quest.'];
-    const NATURES=['Hard to get','Wild Cat','Kreativ','Freigeist','Ruhepol','Bum · viel Zeit, wenig Geld'];
-    const ROMANTIC_QUESTS=['Coffee / Drink','Cinema','Night drive','Netflix & chill','Anime night','Horror night','Surprise me'];
-    const QUESTS=['Build something stupid','Code something useful','Gym challenge','Hike somewhere questionable','Road trip','Make money','Learn a ridiculous skill'];
-    const ROLES=['Strategist','Tank','Builder','Wildcard','Diplomat','Lone wolf'];
+    const HEIGHTS=['Hobbit · ~160 cm','~175 cm','182+ cm'];
+    const BUILDS=['Muscle','Lean','Dad bod'];
+    const TYPES=['Hard to get','Kreativ','Freigeist','Ruhepol','Bum · viel Zeit, wenig Geld'];
+    const VIBES=['Netflix & chill','Cinema','Anime night','Horror night','So bad it\'s good'];
+    const DIFFICULTIES=['Nur schauen, nicht anfassen.','Ein bisschen flirten.','Gefährlich neugierig.','Ich brauche Abenteuer.','I wish to live out my fantasies.'];
+    const ROMANTIC_QUESTS=['Over coffee or drinks.','At the cinema.','On a night drive.','On a hike.','Doing something stupid.','Building something.','Surprise me.'];
+    const QUESTS=['Building something stupid.','Coding something useful.','In the middle of a gym challenge.','On a questionable hike.','On a road trip.','Making money.','Learning a ridiculous skill.'];
+    const CLASS_NAMES={'Brains+Chaos':'Mad scientist build.','Charm+Chaos':'Menace build.','Courage+Stamina':'Main character build.','Brains+Charm':'Final boss build.'};
 
     function escapeHtml(value){return String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;")}
     function compact(value){return String(value||'').replace(/\s+/g,' ').trim()}
@@ -165,10 +171,13 @@
     function isQuest(){return state.answers.identity==='He'||state.answers.path==='quest'}
     function isPreferred(){return state.answers.height==='~175 cm'&&(state.answers.build==='Muscle'||state.answers.build==='Lean')}
 
+    function statsLine(){return Object.entries(state.answers.stats).filter(([,v])=>v>0).map(([k,v])=>`${k} ${v}`).join(' · ')}
+    function className(){const maxed=Object.entries(state.answers.stats).filter(([,v])=>v===5).map(([k])=>k);return maxed.length===2?(CLASS_NAMES[maxed.join('+')]||''):''}
+
     function expectedScreens(){
-      if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','stats','interests','core','romantic-profile','difficulty','romantic-quest','final'];
-      if(state.answers.identity==='She'&&state.answers.path==='quest')return ['identity','path','stats','interests','core','role','quest','final'];
-      if(state.answers.identity==='He')return ['identity','stats','interests','core','role','quest','final'];
+      if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','talent','stats','interests','romantic-profile','difficulty','romantic-quest','final'];
+      if(state.answers.identity==='She'&&state.answers.path==='quest')return ['identity','path','talent','stats','interests','values','quest','final'];
+      if(state.answers.identity==='He')return ['identity','talent','stats','interests','values','quest','final'];
       return ['identity'];
     }
     function updateHud(){
@@ -177,73 +186,80 @@
       stepEl.textContent=flow.length>1&&idx>=0?`${String(idx+1).padStart(2,'0')} / ${String(flow.length).padStart(2,'0')}`:'';
       sfxEl.classList.toggle('off',!state.sound);sfxEl.setAttribute('aria-pressed',String(state.sound));
     }
-    function go(screen,{replace=false,sound='next'}={}){if(!replace)state.history.push(state.screen);state.screen=screen;sfx(sound);analytics.lastView='';render()}
-    function resetForIdentity(){state.answers={identity:'',path:'',stats:initialStats(),interests:[],talent:'',moral:'',height:'',build:'',nature:'',difficulty:'',role:'',quest:''};state.appealed=false}
-    function chooseSingle(key,value,next){state.answers[key]=value;track('answer_selected',{question:key,choice:value,path:state.answers.path||'unset'});sfx('select');setTimeout(()=>go(next,{sound:'next'}),105)}
+    function go(screen,{replace=false,sound='next'}={}){if(screen===state.screen)return;if(!replace)state.history.push(state.screen);state.screen=screen;sfx(sound);analytics.lastView='';render()}
+    function resetForIdentity(){state.answers=initialAnswers();state.appealed=false;state.interestsFull=false}
+    function chooseSingle(key,value,next,event){state.answers[key]=value;track('answer_selected',{question:key,choice:value,path:state.answers.path||'unset'});if(event)track(event,{choice:value,path:state.answers.path||'unset'});sfx('select');setTimeout(()=>go(next,{sound:'next'}),105)}
 
-    function btnChoice(label,key,next,extra=''){const selected=state.answers[key]===label;return `<button class="choice ${extra}${selected?' selected':''}" type="button" data-single-key="${key}" data-value="${escapeHtml(label)}" data-next="${next}"><span>${escapeHtml(label)}</span><span class="arrow">↗</span></button>`}
+    function btnChoice(label,key,next,event=''){const selected=state.answers[key]===label;return `<button class="choice${selected?' selected':''}" type="button" data-single-key="${key}" data-value="${escapeHtml(label)}" data-next="${next}" data-event="${event}"><span>${escapeHtml(label)}</span><span class="arrow">↗</span></button>`}
 
     function renderIdentity(){
       trackView('identity');
-      app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h1>Who are you<span class="period">?</span></h1><p class="lede">Character assessment in progress.</p><div class="options"><button class="choice" type="button" data-identity="She"><span>She</span><span class="arrow">↗</span></button><button class="choice" type="button" data-identity="He"><span>He</span><span class="arrow">↗</span></button></div></section>`;
-      app.querySelectorAll('[data-identity]').forEach(b=>b.addEventListener('click',()=>{resetForIdentity();state.answers.identity=b.dataset.identity;track('identity_selected',{identity:b.dataset.identity});sfx('select');setTimeout(()=>{if(b.dataset.identity==='She')go('path');else{state.answers.path='quest';go('stats')}},105)}));
+      app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h1>Who are you<span class="period">?</span></h1><p class="lede">Character assessment in progress.<br>Quest locked.</p><div class="options"><button class="choice" type="button" data-identity="She"><span>She</span><span class="arrow">↗</span></button><button class="choice" type="button" data-identity="He"><span>He</span><span class="arrow">↗</span></button></div></section>`;
+      app.querySelectorAll('[data-identity]').forEach(b=>b.addEventListener('click',()=>{resetForIdentity();state.answers.identity=b.dataset.identity;track('gender_selected',{identity:b.dataset.identity});sfx('select');setTimeout(()=>{if(b.dataset.identity==='She')go('path');else{state.answers.path='quest';go('talent')}},105)}));
     }
 
     function renderPath(){
       trackView('path');
-      app.innerHTML=`<section class="panel"><p class="eyebrow">CHOOSE YOUR PATH, TRAVELER.</p><h2 class="question">What are you here for<span class="period">?</span></h2><div class="options"><button class="choice" type="button" data-path="romantic"><span>Secretly romantic.</span><span class="arrow">↗</span></button><button class="choice" type="button" data-path="quest"><span>Embark on a quest.</span><span class="arrow">↗</span></button></div></section>`;
-      app.querySelectorAll('[data-path]').forEach(b=>b.addEventListener('click',()=>{state.answers.path=b.dataset.path;track('path_selected',{path:b.dataset.path});sfx('select');setTimeout(()=>go('stats'),105)}));
+      app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h2 class="question">Choose your path, traveler<span class="period">.</span></h2><div class="options"><button class="choice" type="button" data-path="romantic"><span>Secretly romantic.</span><span class="arrow">↗</span></button><button class="choice" type="button" data-path="quest"><span>I am here to embark on a quest.</span><span class="arrow">↗</span></button></div></section>`;
+      app.querySelectorAll('[data-path]').forEach(b=>b.addEventListener('click',()=>{const a=state.answers;if(a.path&&a.path!==b.dataset.path){a.moral='';a.height='';a.build='';a.type='';a.vibe='';a.difficulty='';a.quest='';state.appealed=false}a.path=b.dataset.path;track('path_selected',{path:b.dataset.path});sfx('select');setTimeout(()=>go('talent'),105)}));
+    }
+
+    function renderTalent(){
+      trackView('talent',{path:state.answers.path});
+      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR STAT</p><h2 class="question">What are you unusually good at<span class="period">?</span></h2><input class="field" id="talent" maxlength="120" autocomplete="off" enterkeyhint="next" placeholder="Etwas, das man dir nicht ansieht …" value="${escapeHtml(state.answers.talent)}" /><p class="counter" id="talent-count">${state.answers.talent.length} / 120</p><button class="next" id="talent-next" type="button" ${state.answers.talent?'':'disabled'}>Weiter</button><button class="skip" id="talent-skip" type="button">Bleibt geheim.</button></section>`;
+      const input=document.getElementById('talent');const count=document.getElementById('talent-count');const next=document.getElementById('talent-next');
+      const done=(skipped)=>{state.answers.talent=skipped?'':compact(input.value);track('stat_text_completed',{talent:state.answers.talent,skipped,length:state.answers.talent.length});go('stats')};
+      input.addEventListener('input',()=>{count.textContent=`${input.value.length} / 120`;next.disabled=!compact(input.value)});
+      input.addEventListener('keydown',e=>{if(e.key==='Enter'&&compact(input.value)){e.preventDefault();done(false)}});
+      next.addEventListener('click',()=>done(false));
+      document.getElementById('talent-skip').addEventListener('click',()=>{input.value='';done(true)});
     }
 
     function renderStats(){
       trackView('stats',{path:state.answers.path});
       const total=statTotal();const remaining=10-total;
-      app.innerHTML=`<section class="panel"><p class="eyebrow">ALLOCATE YOUR STATS</p><h2 class="question">Build your character<span class="period">.</span></h2><div class="stats">${Object.entries(state.answers.stats).map(([name,val])=>`<div class="stat-row"><span class="stat-name">${name}</span><div class="stat-controls"><button class="stat-btn" type="button" data-stat="${name}" data-delta="-1" ${val<=0?'disabled':''} aria-label="Decrease ${name}">−</button><span class="stat-value">${val}</span><button class="stat-btn" type="button" data-stat="${name}" data-delta="1" ${val>=5||remaining<=0?'disabled':''} aria-label="Increase ${name}">+</button></div></div>`).join('')}</div><p class="remaining"><strong>${remaining}</strong> points remaining · max 5 per stat</p><button class="next" id="stats-next" type="button" ${remaining!==0?'disabled':''}>Lock in stats</button></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">ALLOCATE YOUR STATS</p><h2 class="question">Bau deinen Charakter<span class="period">.</span></h2><div class="stats">${Object.entries(state.answers.stats).map(([name,val])=>`<div class="stat-row"><span class="stat-name">${name}</span><div class="stat-controls"><button class="stat-btn" type="button" data-stat="${name}" data-delta="-1" ${val<=0?'disabled':''} aria-label="Decrease ${name}">−</button><span class="stat-value">${val}</span><button class="stat-btn" type="button" data-stat="${name}" data-delta="1" ${val>=5||remaining<=0?'disabled':''} aria-label="Increase ${name}">+</button></div></div>`).join('')}</div><p class="remaining"><strong>${remaining}</strong> points remaining.<br>Max. 5 pro Wert.</p><p class="build">${escapeHtml(className())}</p><button class="next" id="stats-next" type="button" ${remaining!==0?'disabled':''}>Lock in stats</button></section>`;
       app.querySelectorAll('[data-stat]').forEach(b=>b.addEventListener('click',()=>{const name=b.dataset.stat;const delta=Number(b.dataset.delta);const current=state.answers.stats[name];const next=current+delta;if(next<0||next>5)return;if(delta>0&&statTotal()>=10)return;state.answers.stats[name]=next;sfx('select');track('stat_changed',{stat:name,value:next,total:statTotal()});render()}));
-      document.getElementById('stats-next')?.addEventListener('click',()=>{track('stats_completed',{stats:state.answers.stats});go('interests')});
+      document.getElementById('stats-next')?.addEventListener('click',()=>{track('stats_allocated',{stats:state.answers.stats,build:className()});go('interests')});
     }
 
     function renderInterests(){
       trackView('interests',{path:state.answers.path});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">CHOOSE YOUR INTERESTS</p><h2 class="question">Pick your loadout<span class="period">.</span></h2><p class="hint">Choose up to 4.</p><div class="options">${INTERESTS.map(v=>`<button class="choice multi${state.answers.interests.includes(v)?' selected':''}" type="button" data-interest="${escapeHtml(v)}"><span>${escapeHtml(v)}</span><span class="arrow"></span></button>`).join('')}</div><button class="next" id="interests-next" type="button" ${state.answers.interests.length<1?'disabled':''}>Continue</button></section>`;
-      app.querySelectorAll('[data-interest]').forEach(b=>b.addEventListener('click',()=>{const v=b.dataset.interest;const a=state.answers.interests;const i=a.indexOf(v);if(i>=0)a.splice(i,1);else if(a.length<4)a.push(v);else{sfx('fail');return}track('interest_toggled',{interest:v,selected:i<0,interests:a});sfx('select');render()}));
-      document.getElementById('interests-next')?.addEventListener('click',()=>go('core'));
+      app.innerHTML=`<section class="panel"><p class="eyebrow">CHOOSE YOUR INTERESTS</p><h2 class="question">Pack deine Ausrüstung<span class="period">.</span></h2><p class="hint${state.interestsFull?' danger':''}">${state.interestsFull?'Ausrüstung voll.':'Bis zu 4.'}</p><div class="chips" style="margin-top:22px">${INTERESTS.map(v=>`<button class="chip${state.answers.interests.includes(v)?' selected':''}" type="button" data-interest="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('')}</div><button class="next" id="interests-next" type="button" ${state.answers.interests.length<1?'disabled':''}>Weiter</button></section>`;
+      app.querySelectorAll('[data-interest]').forEach(b=>b.addEventListener('click',()=>{const v=b.dataset.interest;const a=state.answers.interests;const i=a.indexOf(v);if(i>=0)a.splice(i,1);else if(a.length<4)a.push(v);else{state.interestsFull=true;sfx('fail');render();return}state.interestsFull=false;track('interest_toggled',{interest:v,selected:i<0,interests:a});sfx('select');render()}));
+      document.getElementById('interests-next')?.addEventListener('click',()=>{state.interestsFull=false;track('interests_selected',{interests:state.answers.interests,count:state.answers.interests.length});go(isRomantic()?'romantic-profile':'values')});
     }
 
-    function renderCore(){
-      trackView('core',{path:state.answers.path});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR STAT</p><h2 class="question">What are you unusually good at<span class="period">?</span></h2><input class="field" id="talent" maxlength="120" autocomplete="off" placeholder="Something people wouldn't guess …" value="${escapeHtml(state.answers.talent)}" /><p class="section-label">MORAL CHECK</p><p class="lede" style="margin-top:0">You face a thousand men in battle. Would you fight for what you believe in?</p><div class="options">${MORALS.map(v=>`<button class="choice${state.answers.moral===v?' selected':''}" type="button" data-moral="${escapeHtml(v)}"><span>${escapeHtml(v)}</span><span class="arrow">↗</span></button>`).join('')}</div><button class="next" id="core-next" type="button" ${!state.answers.moral?'disabled':''}>Continue</button><button class="skip" id="talent-skip" type="button">Talent is classified</button></section>`;
-      const talent=document.getElementById('talent');talent.addEventListener('input',()=>{state.answers.talent=compact(talent.value)});
-      app.querySelectorAll('[data-moral]').forEach(b=>b.addEventListener('click',()=>{state.answers.talent=compact(talent.value);state.answers.moral=b.dataset.moral;track('answer_selected',{question:'moral',choice:b.dataset.moral});sfx('select');render()}));
-      document.getElementById('core-next')?.addEventListener('click',()=>{state.answers.talent=compact(document.getElementById('talent')?.value);track('core_completed',{talent:state.answers.talent,moral:state.answers.moral});go(isRomantic()?'romantic-profile':'role')});
-      document.getElementById('talent-skip')?.addEventListener('click',()=>{state.answers.talent='';const input=document.getElementById('talent');if(input)input.value='';track('talent_skipped',{})});
+    function renderValues(){
+      trackView('values',{path:state.answers.path});
+      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR VALUES ARE UNDER ATTACK.</p><h2 class="question">You face a thousand men in battle<span class="period">.</span></h2><p class="lede" style="margin-top:-8px">Would you fight for what you believe in?</p><div class="options">${MORALS.map(v=>btnChoice(v,'moral','quest','values_answered')).join('')}</div></section>`;
+      bindSingleChoices();
     }
 
     function renderRomanticProfile(){
       trackView('romantic_profile');
-      const ready=state.answers.height&&state.answers.build&&state.answers.nature;
-      const heights=['Hobbit · ~160 cm','~175 cm','182+ cm'];const builds=['Muscle','Lean','Dad bod'];
-      app.innerHTML=`<section class="panel"><p class="eyebrow">QUICK STATS</p><h2 class="question">A few details<span class="period">.</span></h2><div class="split"><div><p class="section-label" style="margin-top:0">Height</p><div class="compact-options three">${heights.map(v=>`<button class="mini${state.answers.height===v?' selected':''}" type="button" data-profile="height" data-value="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('')}</div></div><div><p class="section-label">Build</p><div class="compact-options three">${builds.map(v=>`<button class="mini${state.answers.build===v?' selected':''}" type="button" data-profile="build" data-value="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('')}</div></div><div><p class="section-label">Choose your nature</p><div class="chips">${NATURES.map(v=>`<button class="chip${state.answers.nature===v?' selected':''}" type="button" data-profile="nature" data-value="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('')}</div></div></div><button class="next" id="profile-next" type="button" ${ready?'':'disabled'}>Continue</button></section>`;
+      const a=state.answers;const ready=a.height&&a.build&&a.type&&a.vibe;
+      const group=(label,key,values,layout,first)=>`<div><p class="section-label"${first?' style="margin-top:0"':''}>${label}</p><div class="${layout}">${values.map(v=>`<button class="${layout==='chips'?'chip':'mini'}${a[key]===v?' selected':''}" type="button" data-profile="${key}" data-value="${escapeHtml(v)}">${escapeHtml(v).replace(' cm','&nbsp;cm')}</button>`).join('')}</div></div>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">QUICK STATS</p><h2 class="question">Ein paar Details<span class="period">.</span></h2><div class="split">${group('Größe?','height',HEIGHTS,'compact-options three',true)}${group('Statur?','build',BUILDS,'compact-options three')}${group('Typ?','type',TYPES,'chips')}${group('What sounds better?','vibe',VIBES,'chips')}</div><button class="next" id="profile-next" type="button" ${ready?'':'disabled'}>Weiter</button></section>`;
       app.querySelectorAll('[data-profile]').forEach(b=>b.addEventListener('click',()=>{state.answers[b.dataset.profile]=b.dataset.value;track('answer_selected',{question:b.dataset.profile,choice:b.dataset.value});sfx('select');render()}));
-      document.getElementById('profile-next')?.addEventListener('click',()=>go('difficulty'));
+      document.getElementById('profile-next')?.addEventListener('click',()=>{track('attraction_answered',{height:a.height,build:a.build,type:a.type,vibe:a.vibe});go('difficulty')});
     }
 
     function renderDifficulty(){
       trackView('difficulty');
-      const opts=['A little flirting.','Dangerously curious.','I wish to live out my fantasies.'];
-      app.innerHTML=`<section class="panel"><p class="eyebrow">CHOOSE YOUR DIFFICULTY.</p><h2 class="question">How deep does this quest go<span class="period">?</span></h2><div class="options">${opts.map(v=>btnChoice(v,'difficulty','romantic-quest')).join('')}</div></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">CHOOSE YOUR DIFFICULTY.</p><h2 class="question">Wie weit soll diese Quest gehen<span class="period">?</span></h2><div class="options">${DIFFICULTIES.map(v=>btnChoice(v,'difficulty','romantic-quest','difficulty_selected')).join('')}</div></section>`;
       bindSingleChoices();
     }
 
     function renderRomanticQuest(){
       trackView('romantic_quest');
-      app.innerHTML=`<section class="panel"><p class="eyebrow">PICK YOUR QUEST.</p><h2 class="question">Where does the story start<span class="period">?</span></h2><div class="options">${ROMANTIC_QUESTS.map(v=>`<button class="choice${state.answers.quest===v?' selected':''}" type="button" data-romantic-quest="${escapeHtml(v)}"><span>${escapeHtml(v)}</span><span class="arrow">↗</span></button>`).join('')}</div></section>`;
-      app.querySelectorAll('[data-romantic-quest]').forEach(b=>b.addEventListener('click',()=>{state.answers.quest=b.dataset.romanticQuest;track('answer_selected',{question:'quest',choice:b.dataset.romanticQuest,path:'romantic'});sfx('select');setTimeout(()=>finishRomantic(),120)}));
+      app.innerHTML=`<section class="panel"><p class="eyebrow">PICK YOUR QUEST.</p><h2 class="question">Wo beginnt die Geschichte<span class="period">?</span></h2><div class="options">${ROMANTIC_QUESTS.map(v=>`<button class="choice${state.answers.quest===v?' selected':''}" type="button" data-romantic-quest="${escapeHtml(v)}"><span>${escapeHtml(v)}</span><span class="arrow">↗</span></button>`).join('')}</div></section>`;
+      app.querySelectorAll('[data-romantic-quest]').forEach(b=>b.addEventListener('click',()=>{state.answers.quest=b.dataset.romanticQuest;track('quest_selected',{quest:b.dataset.romanticQuest,path:'romantic'});sfx('select');setTimeout(()=>finishRomantic(),120)}));
     }
 
     function finishRomantic(){
-      track('romantic_gate_evaluated',{height:state.answers.height,build:state.answers.build,nature:state.answers.nature,preferred:isPreferred()});
-      if(isPreferred()){sfx('unlock');go('final',{sound:null})}else{sfx('fail');go('denied',{sound:null})}
+      track('romantic_gate_evaluated',{height:state.answers.height,build:state.answers.build,type:state.answers.type,preferred:isPreferred()});
+      if(isPreferred())go('final',{sound:'success'});else{sfx('fail');go('denied',{sound:null})}
     }
 
     function renderDenied(){
@@ -254,74 +270,58 @@
 
     function renderException(){
       trackView('exception',{path:'romantic'});
-      app.innerHTML=`<section class="panel final"><p class="eyebrow">APPEAL ACCEPTED.</p><h1>Fine<span class="period">.</span></h1><p class="lede">We'll make an exception.</p><button class="next" id="exception-next" type="button">Continue</button></section>`;
-      document.getElementById('exception-next').addEventListener('click',()=>go('final'));
-    }
-
-    function renderRole(){
-      trackView('role',{identity:state.answers.identity});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">PARTY ROLE</p><h2 class="question">Choose your role<span class="period">.</span></h2><div class="options">${ROLES.map(v=>btnChoice(v,'role','quest')).join('')}</div></section>`;
-      bindSingleChoices();
+      app.innerHTML=`<section class="panel final"><p class="eyebrow">APPEAL ACCEPTED.</p><h1>Fine<span class="period">.</span></h1><p class="lede">We'll make an exception.</p><button class="next" id="exception-next" type="button">Weiter</button></section>`;
+      document.getElementById('exception-next').addEventListener('click',()=>go('final',{sound:'success'}));
     }
 
     function renderQuest(){
       trackView('quest',{identity:state.answers.identity});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">PICK A SIDE QUEST.</p><h2 class="question">Choose wisely<span class="period">.</span></h2><div class="options">${QUESTS.map(v=>`<button class="choice${state.answers.quest===v?' selected':''}" type="button" data-quest="${escapeHtml(v)}"><span>${escapeHtml(v)}</span><span class="arrow">↗</span></button>`).join('')}</div></section>`;
-      app.querySelectorAll('[data-quest]').forEach(b=>b.addEventListener('click',()=>{state.answers.quest=b.dataset.quest;track('answer_selected',{question:'quest',choice:b.dataset.quest,path:'quest'});sfx('select');setTimeout(()=>{sfx('unlock');go('final',{sound:null})},120)}));
+      app.innerHTML=`<section class="panel"><p class="eyebrow">PICK YOUR QUEST.</p><h2 class="question">Wo beginnt das Abenteuer<span class="period">?</span></h2><div class="options">${QUESTS.map(v=>`<button class="choice${state.answers.quest===v?' selected':''}" type="button" data-quest="${escapeHtml(v)}"><span>${escapeHtml(v)}</span><span class="arrow">↗</span></button>`).join('')}</div></section>`;
+      app.querySelectorAll('[data-quest]').forEach(b=>b.addEventListener('click',()=>{state.answers.quest=b.dataset.quest;track('quest_selected',{quest:b.dataset.quest,path:'quest'});sfx('select');setTimeout(()=>go('final',{sound:'success'}),120)}));
     }
 
+    function travelerLine(){const a=state.answers;return a.identity+(a.identity==='She'&&a.path?` · ${a.path==='romantic'?'Secretly romantic':'Quest'}`:'')}
     function summaryRows(){
-      const a=state.answers;const rows=[];
-      rows.push(['Traveler',a.identity+(a.identity==='She'&&a.path?` · ${a.path==='romantic'?'Secretly romantic':'Quest'}`:'')]);
-      rows.push(['Stats',Object.entries(a.stats).map(([k,v])=>`${k} ${v}`).join(' · ')]);
-      rows.push(['Loadout',a.interests.join(', ')]);
-      if(a.talent)rows.push(['Special stat',a.talent]);
-      if(isRomantic()){rows.push(['Nature',[a.height,a.build,a.nature].filter(Boolean).join(' · ')]);rows.push(['Difficulty',a.difficulty]);}
-      else rows.push(['Role',a.role]);
-      rows.push(['Quest',a.quest]);
+      const a=state.answers;const rows=[['Traveler',travelerLine()]];
+      if(a.talent)rows.push(['Your stat',a.talent]);
+      rows.push(['Stats',statsLine()]);
+      if(a.interests.length)rows.push(['Interests',a.interests.join(', ')]);
+      if(isRomantic()){rows.push(['Quick stats',[a.height,a.build,a.type].filter(Boolean).join(' · ')]);rows.push(['Vibe',a.vibe]);rows.push(['Difficulty',a.difficulty])}
+      else if(a.moral)rows.push(['Values',a.moral]);
+      if(a.quest)rows.push(['Quest',a.quest]);
       return rows;
     }
     function messageText(){
-      const a=state.answers;const lines=['NOT YOUR BUSINESS. — character sheet'];
-      lines.push(`Traveler: ${a.identity}${a.identity==='She'?` · ${a.path==='romantic'?'Secretly romantic':'Quest'}`:''}`);
-      lines.push(`Stats: ${Object.entries(a.stats).map(([k,v])=>`${k} ${v}`).join(' · ')}`);
-      if(a.interests.length)lines.push(`Interests: ${a.interests.join(', ')}`);
-      if(a.talent)lines.push(`Special stat: ${a.talent}`);
-      if(a.moral)lines.push(`Battle: ${a.moral}`);
-      if(isRomantic()){
-        lines.push(`Quick stats: ${[a.height,a.build,a.nature].filter(Boolean).join(' · ')}`);
-        lines.push(`Difficulty: ${a.difficulty}`);
-        if(state.appealed)lines.push('Appeal: accepted');
-      }else if(a.role)lines.push(`Party role: ${a.role}`);
-      if(a.quest)lines.push(`Quest: ${a.quest}`);
+      const lines=['NOT YOUR BUSINESS. — character sheet',...summaryRows().map(([k,v])=>`${k}: ${v}`)];
+      if(isRomantic()&&state.appealed)lines.push('Appeal: accepted');
       return lines.join('\n');
     }
     function whatsappUrl(){return `https://wa.me/${PHONE}?text=${encodeURIComponent(messageText())}`}
-    function completeSurvey(){const a=state.answers;track('survey_completed',{identity:a.identity,path:a.path,stats:a.stats,interests:a.interests,talent:a.talent,moral:a.moral,height:a.height,build:a.build,nature:a.nature,difficulty:a.difficulty,role:a.role,quest:a.quest,appealed:state.appealed})}
+    function completeSurvey(){const a=state.answers;track('character_completed',{identity:a.identity,path:a.path,stats:a.stats,build_class:className(),interests:a.interests,talent:a.talent,moral:a.moral,height:a.height,build:a.build,type:a.type,vibe:a.vibe,difficulty:a.difficulty,quest:a.quest,appealed:state.appealed})}
 
     function renderFinal(){
       trackView('final',{path:state.answers.path,identity:state.answers.identity});completeSurvey();
-      app.innerHTML=`<section class="panel final"><p class="eyebrow">CHARACTER ACCEPTED.</p><h1>Quest unlocked<span class="period">.</span></h1><p class="lede">You made it.</p><div class="result-card">${summaryRows().map(([k,v])=>`<div class="result-row"><span>${escapeHtml(k)}</span><span>${escapeHtml(v)}</span></div>`).join('')}</div><a class="whatsapp" id="join" href="${whatsappUrl()}">Join the party</a><p class="micro">Your answers are copied into the message. Edit anything you want before sending.</p></section>`;
+      app.innerHTML=`<section class="panel final"><p class="eyebrow">CHARACTER ACCEPTED.</p><h1>Quest unlocked<span class="period">.</span></h1><p class="lede">Geschafft.</p><div class="result-card">${summaryRows().map(([k,v])=>`<div class="result-row"><span>${escapeHtml(k)}</span><span>${escapeHtml(v)}</span></div>`).join('')}</div><a class="whatsapp" id="join" href="${whatsappUrl()}">Join the party</a><p class="micro">Deine Antworten stehen schon in der Nachricht. Vor dem Senden kannst du alles ändern.</p></section>`;
       document.getElementById('join').addEventListener('click',()=>track('join_party_clicked',{path:state.answers.path,quest:state.answers.quest}));
     }
 
     function bindSingleChoices(){
-      app.querySelectorAll('[data-single-key]').forEach(b=>b.addEventListener('click',()=>chooseSingle(b.dataset.singleKey,b.dataset.value,b.dataset.next)));
+      app.querySelectorAll('[data-single-key]').forEach(b=>b.addEventListener('click',()=>chooseSingle(b.dataset.singleKey,b.dataset.value,b.dataset.next,b.dataset.event)));
     }
 
     function render(){
       updateHud();
       if(state.screen==='identity')renderIdentity();
       else if(state.screen==='path')renderPath();
+      else if(state.screen==='talent')renderTalent();
       else if(state.screen==='stats')renderStats();
       else if(state.screen==='interests')renderInterests();
-      else if(state.screen==='core')renderCore();
+      else if(state.screen==='values')renderValues();
       else if(state.screen==='romantic-profile')renderRomanticProfile();
       else if(state.screen==='difficulty')renderDifficulty();
       else if(state.screen==='romantic-quest')renderRomanticQuest();
       else if(state.screen==='denied')renderDenied();
       else if(state.screen==='exception')renderException();
-      else if(state.screen==='role')renderRole();
       else if(state.screen==='quest')renderQuest();
       else if(state.screen==='final')renderFinal();
     }
