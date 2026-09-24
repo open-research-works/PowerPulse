@@ -195,10 +195,12 @@
 
     function renderTalent(){
       trackView('talent',{path:state.answers.path});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR STAT</p><h2 class="question">Secret talent<span class="period">?</span></h2><input class="field" id="talent" maxlength="120" autocomplete="off" enterkeyhint="next" placeholder="Etwas, das man dir nicht ansieht …" value="${escapeHtml(state.answers.talent)}" /><p class="counter" id="talent-count">${state.answers.talent.length} / 120</p><button class="next" id="talent-next" type="button" ${state.answers.talent?'':'disabled'}>Weiter</button></section>`;
+      const required=isRomantic();
+      const hasTalent=!!compact(state.answers.talent);
+      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR STAT</p><h2 class="question">Secret talent<span class="period">?</span></h2><input class="field" id="talent" maxlength="120" autocomplete="off" enterkeyhint="next" placeholder="Etwas, das man dir nicht ansieht …" value="${escapeHtml(state.answers.talent)}" /><p class="counter" id="talent-count">${state.answers.talent.length} / 120</p><button class="next" id="talent-next" type="button" ${required&&!hasTalent?'disabled':''}>${hasTalent?'Weiter':required?'Weiter':'Bleibt geheim.'}</button></section>`;
       const input=document.getElementById('talent');const count=document.getElementById('talent-count');const next=document.getElementById('talent-next');
-      const done=()=>{const value=compact(input.value);if(!value)return;state.answers.talent=value;track('stat_text_completed',{talent:state.answers.talent,skipped:false,length:state.answers.talent.length});go(isRomantic()?'difficulty':'values')};
-      input.addEventListener('input',()=>{count.textContent=`${input.value.length} / 120`;next.disabled=!compact(input.value)});
+      const done=()=>{const value=compact(input.value);if(required&&!value)return;state.answers.talent=value;track('stat_text_completed',{talent:state.answers.talent,skipped:!value,length:state.answers.talent.length,path:state.answers.path});go(isRomantic()?'difficulty':'values')};
+      input.addEventListener('input',()=>{const value=compact(input.value);count.textContent=`${input.value.length} / 120`;next.disabled=required&&!value;next.textContent=value?'Weiter':required?'Weiter':'Bleibt geheim.'});
       input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();done()}});
       next.addEventListener('click',done);
     }
