@@ -131,7 +131,7 @@
     const sfxEl=document.getElementById('sfx');
 
     const initialStats=()=>({Brains:0,Courage:0,Charm:0,Stamina:0,Chaos:0});
-    const initialAnswers=()=>({identity:'',path:'',stats:initialStats(),interests:[],talent:'',moral:'',height:'',build:'',type:'',vibe:'',difficulty:'',quest:''});
+    const initialAnswers=()=>({identity:'',path:'',stats:initialStats(),interests:[],talent:'',moral:'',height:'',build:'',type:'',vibe:'',difficulty:'',scene:'',quest:''});
     const state={screen:'identity',history:[],sound:true,appealed:false,interestsFull:false,answers:initialAnswers()};
 
     const analytics={lastView:''};
@@ -157,10 +157,10 @@
     const MORALS=['Without hesitation.','Depends what we\'re fighting for.','I\'d rather outsmart them.','I\'m not dying for a side quest.'];
     const HEIGHTS=['Hobbit · ~160 cm','~175 cm','182+ cm'];
     const BUILDS=['Muscle','Lean','Dad bod'];
-    const TYPES=['Hard to get','Kreativ','Freigeist','Ruhepol','Bum · viel Zeit, wenig Geld'];
+    const TYPES=['Hard to get','Wild Cat','Kreativ','Freigeist','Ruhepol','Bum · viel Zeit, wenig Geld'];
     const VIBES=['Netflix & chill','Cinema','Anime night','Horror night','So bad it\'s good'];
-    const DIFFICULTIES=['Nur schauen, nicht anfassen.','Ein bisschen flirten.','Gefährlich neugierig.','Ich brauche Abenteuer.','I wish to live out my fantasies.'];
-    const ROMANTIC_QUESTS=['Over coffee or drinks.','At the cinema.','On a night drive.','On a hike.','Doing something stupid.','Building something.','Surprise me.'];
+    const DIFFICULTIES=['Nur schauen, nicht anfassen.','Ein bisschen flirten.','Gefährlich neugierig.','Mal sehen, was passiert.','I wish to live out my fantasies.'];
+    const ROMANTIC_SCENES=['Over coffee or drinks.','At the cinema.','On a night drive.','Netflix & chill.','Anime night.','Horror night.','Surprise me.'];
     const QUESTS=['Building something stupid.','Coding something useful.','In the middle of a gym challenge.','On a questionable hike.','On a road trip.','Making money.','Learning a ridiculous skill.'];
     const CLASS_NAMES={'Brains+Chaos':'Mad scientist build.','Charm+Chaos':'Menace build.','Courage+Stamina':'Main character build.','Brains+Charm':'Final boss build.'};
 
@@ -175,7 +175,7 @@
     function className(){const maxed=Object.entries(state.answers.stats).filter(([,v])=>v===5).map(([k])=>k);return maxed.length===2?(CLASS_NAMES[maxed.join('+')]||''):''}
 
     function expectedScreens(){
-      if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','stats','interests','talent','romantic-profile','difficulty','romantic-quest','final'];
+      if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','stats','interests','talent','romantic-profile','difficulty','romantic-scene','final'];
       if(state.answers.identity==='She'&&state.answers.path==='quest')return ['identity','path','stats','interests','talent','values','quest','final'];
       if(state.answers.identity==='He')return ['identity','stats','interests','talent','values','quest','final'];
       return ['identity'];
@@ -201,7 +201,7 @@
     function renderPath(){
       trackView('path');
       app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h2 class="question">Choose your path, traveler<span class="period">.</span></h2><div class="options"><button class="choice" type="button" data-path="romantic"><span>Secretly romantic.</span><span class="arrow">↗</span></button><button class="choice" type="button" data-path="quest"><span>I am here to embark on a quest.</span><span class="arrow">↗</span></button></div></section>`;
-      app.querySelectorAll('[data-path]').forEach(b=>b.addEventListener('click',()=>{const a=state.answers;if(a.path&&a.path!==b.dataset.path){a.moral='';a.height='';a.build='';a.type='';a.vibe='';a.difficulty='';a.quest='';state.appealed=false}a.path=b.dataset.path;track('path_selected',{path:b.dataset.path});sfx('select');setTimeout(()=>go('stats'),105)}));
+      app.querySelectorAll('[data-path]').forEach(b=>b.addEventListener('click',()=>{const a=state.answers;if(a.path&&a.path!==b.dataset.path){a.moral='';a.height='';a.build='';a.type='';a.vibe='';a.difficulty='';a.scene='';a.quest='';state.appealed=false}a.path=b.dataset.path;track('path_selected',{path:b.dataset.path});sfx('select');setTimeout(()=>go('stats'),105)}));
     }
 
     function renderTalent(){
@@ -246,14 +246,14 @@
 
     function renderDifficulty(){
       trackView('difficulty');
-      app.innerHTML=`<section class="panel"><p class="eyebrow">CHOOSE YOUR DIFFICULTY.</p><h2 class="question">Wie weit soll diese Quest gehen<span class="period">?</span></h2><div class="options">${DIFFICULTIES.map(v=>btnChoice(v,'difficulty','romantic-quest','difficulty_selected')).join('')}</div></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">CHOOSE YOUR DIFFICULTY.</p><h2 class="question">Wie weit darf das gehen<span class="period">?</span></h2><div class="options">${DIFFICULTIES.map(v=>btnChoice(v,'difficulty','romantic-scene','difficulty_selected')).join('')}</div></section>`;
       bindSingleChoices();
     }
 
-    function renderRomanticQuest(){
-      trackView('romantic_quest');
-      app.innerHTML=`<section class="panel"><p class="eyebrow">PICK YOUR QUEST.</p><h2 class="question">Wo beginnt die Geschichte<span class="period">?</span></h2><div class="options">${ROMANTIC_QUESTS.map(v=>`<button class="choice${state.answers.quest===v?' selected':''}" type="button" data-romantic-quest="${escapeHtml(v)}"><span>${escapeHtml(v)}</span><span class="arrow">↗</span></button>`).join('')}</div></section>`;
-      app.querySelectorAll('[data-romantic-quest]').forEach(b=>b.addEventListener('click',()=>{state.answers.quest=b.dataset.romanticQuest;track('quest_selected',{quest:b.dataset.romanticQuest,path:'romantic'});sfx('select');setTimeout(()=>finishRomantic(),120)}));
+    function renderRomanticScene(){
+      trackView('romantic_scene');
+      app.innerHTML=`<section class="panel"><p class="eyebrow">PICK YOUR VIBE.</p><h2 class="question">Wo fängt es an<span class="period">?</span></h2><div class="options">${ROMANTIC_SCENES.map(v=>`<button class="choice${state.answers.scene===v?' selected':''}" type="button" data-romantic-scene="${escapeHtml(v)}"><span>${escapeHtml(v)}</span><span class="arrow">↗</span></button>`).join('')}</div></section>`;
+      app.querySelectorAll('[data-romantic-scene]').forEach(b=>b.addEventListener('click',()=>{state.answers.scene=b.dataset.romanticScene;track('romantic_scene_selected',{scene:b.dataset.romanticScene});sfx('select');setTimeout(()=>finishRomantic(),120)}));
     }
 
     function finishRomantic(){
@@ -285,9 +285,15 @@
       if(a.talent)rows.push(['Secret talent',a.talent]);
       rows.push(['Stats',statsLine()]);
       if(a.interests.length)rows.push(['Interests',a.interests.join(', ')]);
-      if(isRomantic()){rows.push(['Quick stats',[a.height,a.build,a.type].filter(Boolean).join(' · ')]);rows.push(['Vibe',a.vibe]);rows.push(['Difficulty',a.difficulty])}
-      else if(a.moral)rows.push(['Values',a.moral]);
-      if(a.quest)rows.push(['Quest',a.quest]);
+      if(isRomantic()){
+        rows.push(['Quick stats',[a.height,a.build,a.type].filter(Boolean).join(' · ')]);
+        rows.push(['Vibe',a.vibe]);
+        rows.push(['Difficulty',a.difficulty]);
+        if(a.scene)rows.push(['Scene',a.scene]);
+      } else {
+        if(a.moral)rows.push(['Values',a.moral]);
+        if(a.quest)rows.push(['Quest',a.quest]);
+      }
       return rows;
     }
     function messageText(){
@@ -296,12 +302,18 @@
       return lines.join('\n');
     }
     function whatsappUrl(){return `https://wa.me/${PHONE}?text=${encodeURIComponent(messageText())}`}
-    function completeSurvey(){const a=state.answers;track('character_completed',{identity:a.identity,path:a.path,stats:a.stats,build_class:className(),interests:a.interests,talent:a.talent,moral:a.moral,height:a.height,build:a.build,type:a.type,vibe:a.vibe,difficulty:a.difficulty,quest:a.quest,appealed:state.appealed})}
+    function completeSurvey(){const a=state.answers;track('character_completed',{identity:a.identity,path:a.path,stats:a.stats,build_class:className(),interests:a.interests,talent:a.talent,moral:a.moral,height:a.height,build:a.build,type:a.type,vibe:a.vibe,difficulty:a.difficulty,scene:a.scene,quest:a.quest,appealed:state.appealed})}
 
     function renderFinal(){
       trackView('final',{path:state.answers.path,identity:state.answers.identity});completeSurvey();
-      app.innerHTML=`<section class="panel final"><p class="eyebrow">CHARACTER ACCEPTED.</p><h1>Quest unlocked<span class="period">.</span></h1><p class="lede">Geschafft.</p><div class="result-card">${summaryRows().map(([k,v])=>`<div class="result-row"><span>${escapeHtml(k)}</span><span>${escapeHtml(v)}</span></div>`).join('')}</div><a class="whatsapp" id="join" href="${whatsappUrl()}">Join the party</a><p class="micro">Deine Antworten stehen schon in der Nachricht. Vor dem Senden kannst du alles ändern.</p></section>`;
-      document.getElementById('join').addEventListener('click',()=>track('join_party_clicked',{path:state.answers.path,quest:state.answers.quest}));
+      const rows=`<div class="result-card">${summaryRows().map(([k,v])=>`<div class="result-row"><span>${escapeHtml(k)}</span><span>${escapeHtml(v)}</span></div>`).join('')}</div>`;
+      if(isRomantic()){
+        app.innerHTML=`<section class="panel final"><p class="eyebrow">APPROVED.</p><h1>You made it<span class="period">.</span></h1><p class="lede">Jetzt wird's interessant.</p>${rows}<a class="whatsapp" id="join" href="${whatsappUrl()}">Say hi</a><p class="micro">Deine Antworten stehen schon in der Nachricht. Vor dem Senden kannst du alles ändern.</p></section>`;
+        document.getElementById('join').addEventListener('click',()=>track('say_hi_clicked',{path:'romantic',scene:state.answers.scene}));
+      }else{
+        app.innerHTML=`<section class="panel final"><p class="eyebrow">CHARACTER ACCEPTED.</p><h1>Quest unlocked<span class="period">.</span></h1><p class="lede">Geschafft.</p>${rows}<a class="whatsapp" id="join" href="${whatsappUrl()}">Join the party</a><p class="micro">Deine Antworten stehen schon in der Nachricht. Vor dem Senden kannst du alles ändern.</p></section>`;
+        document.getElementById('join').addEventListener('click',()=>track('join_party_clicked',{path:'quest',quest:state.answers.quest}));
+      }
     }
 
     function bindSingleChoices(){
@@ -318,7 +330,7 @@
       else if(state.screen==='values')renderValues();
       else if(state.screen==='romantic-profile')renderRomanticProfile();
       else if(state.screen==='difficulty')renderDifficulty();
-      else if(state.screen==='romantic-quest')renderRomanticQuest();
+      else if(state.screen==='romantic-scene')renderRomanticScene();
       else if(state.screen==='denied')renderDenied();
       else if(state.screen==='exception')renderException();
       else if(state.screen==='quest')renderQuest();
