@@ -175,7 +175,7 @@
     function className(){const maxed=Object.entries(state.answers.stats).filter(([,v])=>v===5).map(([k])=>k);return maxed.length===2?(CLASS_NAMES[maxed.join('+')]||''):''}
 
     function expectedScreens(){
-      if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','stats','interests','talent','romantic-profile','difficulty','romantic-scene','final'];
+      if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','talent','romantic-profile','difficulty','romantic-scene','final'];
       if(state.answers.identity==='She'&&state.answers.path==='quest')return ['identity','path','stats','interests','talent','values','quest','final'];
       if(state.answers.identity==='He')return ['identity','stats','interests','talent','values','quest','final'];
       return ['identity'];
@@ -201,7 +201,7 @@
     function renderPath(){
       trackView('path');
       app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h2 class="question">Choose your path, traveler<span class="period">.</span></h2><div class="options"><button class="choice" type="button" data-path="romantic"><span>Secretly romantic.</span><span class="arrow">↗</span></button><button class="choice" type="button" data-path="quest"><span>I am here to embark on a quest.</span><span class="arrow">↗</span></button></div></section>`;
-      app.querySelectorAll('[data-path]').forEach(b=>b.addEventListener('click',()=>{const a=state.answers;if(a.path&&a.path!==b.dataset.path){a.moral='';a.height='';a.build='';a.type='';a.vibe='';a.difficulty='';a.scene='';a.quest='';state.appealed=false}a.path=b.dataset.path;track('path_selected',{path:b.dataset.path});sfx('select');setTimeout(()=>go('stats'),105)}));
+      app.querySelectorAll('[data-path]').forEach(b=>b.addEventListener('click',()=>{const a=state.answers;if(a.path&&a.path!==b.dataset.path){a.moral='';a.height='';a.build='';a.type='';a.vibe='';a.difficulty='';a.scene='';a.quest='';state.appealed=false}a.path=b.dataset.path;track('path_selected',{path:b.dataset.path});sfx('select');setTimeout(()=>go(b.dataset.path==='romantic'?'talent':'stats'),105)}));
     }
 
     function renderTalent(){
@@ -283,14 +283,14 @@
     function summaryRows(){
       const a=state.answers;const rows=[['Traveler',travelerLine()]];
       if(a.talent)rows.push(['Secret talent',a.talent]);
-      rows.push(['Stats',statsLine()]);
-      if(a.interests.length)rows.push(['Interests',a.interests.join(', ')]);
       if(isRomantic()){
         rows.push(['Quick stats',[a.height,a.build,a.type].filter(Boolean).join(' · ')]);
         rows.push(['Vibe',a.vibe]);
         rows.push(['Difficulty',a.difficulty]);
         if(a.scene)rows.push(['Scene',a.scene]);
       } else {
+        rows.push(['Stats',statsLine()]);
+        if(a.interests.length)rows.push(['Interests',a.interests.join(', ')]);
         if(a.moral)rows.push(['Values',a.moral]);
         if(a.quest)rows.push(['Quest',a.quest]);
       }
