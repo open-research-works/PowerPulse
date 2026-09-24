@@ -164,7 +164,7 @@
     function className(){const maxed=Object.entries(state.answers.stats).filter(([,v])=>v===5).map(([k])=>k);return maxed.length===2?(CLASS_NAMES[maxed.join('+')]||''):''}
 
     function expectedScreens(){
-      if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','talent','romantic-profile','difficulty','romantic-scene','final'];
+      if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','romantic-profile','talent','difficulty','romantic-scene','final'];
       if(state.answers.identity==='She'&&state.answers.path==='quest')return ['identity','path','stats','interests','talent','values','quest','final'];
       if(state.answers.identity==='He')return ['identity','stats','interests','talent','values','quest','final'];
       return ['identity'];
@@ -190,15 +190,15 @@
     function renderPath(){
       trackView('path');
       app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h2 class="question">Choose your path, traveler<span class="period">.</span></h2><div class="options"><button class="choice" type="button" data-path="romantic"><span>Secretly romantic.</span><span class="arrow">↗</span></button><button class="choice" type="button" data-path="quest"><span>I am here to embark on a quest.</span><span class="arrow">↗</span></button></div></section>`;
-      app.querySelectorAll('[data-path]').forEach(b=>b.addEventListener('click',()=>{const a=state.answers;if(a.path&&a.path!==b.dataset.path){a.moral='';a.height='';a.build='';a.type='';a.vibe='';a.difficulty='';a.scene='';a.quest='';state.appealed=false}a.path=b.dataset.path;track('path_selected',{path:b.dataset.path});sfx('select');setTimeout(()=>go(b.dataset.path==='romantic'?'talent':'stats'),105)}));
+      app.querySelectorAll('[data-path]').forEach(b=>b.addEventListener('click',()=>{const a=state.answers;if(a.path&&a.path!==b.dataset.path){a.moral='';a.height='';a.build='';a.type='';a.vibe='';a.difficulty='';a.scene='';a.quest='';state.appealed=false}a.path=b.dataset.path;track('path_selected',{path:b.dataset.path});sfx('select');setTimeout(()=>go(b.dataset.path==='romantic'?'romantic-profile':'stats'),105)}));
     }
 
     function renderTalent(){
       trackView('talent',{path:state.answers.path});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR STAT</p><h2 class="question">Secret talent<span class="period">?</span></h2><input class="field" id="talent" maxlength="120" autocomplete="off" enterkeyhint="next" placeholder="Etwas, das man dir nicht ansieht …" value="${escapeHtml(state.answers.talent)}" /><p class="counter" id="talent-count">${state.answers.talent.length} / 120</p><button class="next" id="talent-next" type="button">${state.answers.talent?'Weiter':'Bleibt geheim.'}</button></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR STAT</p><h2 class="question">Secret talent<span class="period">?</span></h2><input class="field" id="talent" maxlength="120" autocomplete="off" enterkeyhint="next" placeholder="Etwas, das man dir nicht ansieht …" value="${escapeHtml(state.answers.talent)}" /><p class="counter" id="talent-count">${state.answers.talent.length} / 120</p><button class="next" id="talent-next" type="button" ${state.answers.talent?'':'disabled'}>Weiter</button></section>`;
       const input=document.getElementById('talent');const count=document.getElementById('talent-count');const next=document.getElementById('talent-next');
-      const done=()=>{state.answers.talent=compact(input.value);const skipped=!state.answers.talent;track('stat_text_completed',{talent:state.answers.talent,skipped,length:state.answers.talent.length});go(isRomantic()?'romantic-profile':'values')};
-      input.addEventListener('input',()=>{count.textContent=`${input.value.length} / 120`;next.textContent=compact(input.value)?'Weiter':'Bleibt geheim.'});
+      const done=()=>{const value=compact(input.value);if(!value)return;state.answers.talent=value;track('stat_text_completed',{talent:state.answers.talent,skipped:false,length:state.answers.talent.length});go(isRomantic()?'difficulty':'values')};
+      input.addEventListener('input',()=>{count.textContent=`${input.value.length} / 120`;next.disabled=!compact(input.value)});
       input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();done()}});
       next.addEventListener('click',done);
     }
@@ -230,7 +230,7 @@
       const group=(label,key,values,layout,first)=>`<div><p class="section-label"${first?' style="margin-top:0"':''}>${label}</p><div class="${layout}">${values.map(v=>`<button class="${layout==='chips'?'chip':'mini'}${a[key]===v?' selected':''}" type="button" data-profile="${key}" data-value="${escapeHtml(v)}">${escapeHtml(v).replace(' cm','&nbsp;cm')}</button>`).join('')}</div></div>`;
       app.innerHTML=`<section class="panel"><p class="eyebrow">JUST CURIOUS.</p><h2 class="question">Ein paar Details<span class="period">.</span></h2><div class="split">${group('Größe?','height',HEIGHTS,'compact-options three',true)}${group('Statur?','build',BUILDS,'compact-options three')}${group('Typ?','type',TYPES,'chips')}${group('What sounds better?','vibe',VIBES,'chips')}</div><button class="next" id="profile-next" type="button" ${ready?'':'disabled'}>Weiter</button></section>`;
       app.querySelectorAll('[data-profile]').forEach(b=>b.addEventListener('click',()=>{state.answers[b.dataset.profile]=b.dataset.value;track('answer_selected',{question:b.dataset.profile,choice:b.dataset.value});sfx('select');render()}));
-      document.getElementById('profile-next')?.addEventListener('click',()=>{track('attraction_answered',{height:a.height,build:a.build,type:a.type,vibe:a.vibe});go('difficulty')});
+      document.getElementById('profile-next')?.addEventListener('click',()=>{track('attraction_answered',{height:a.height,build:a.build,type:a.type,vibe:a.vibe});go('talent')});
     }
 
     function renderDifficulty(){
