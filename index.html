@@ -308,8 +308,8 @@
       trackView('final',{path:state.answers.path,identity:state.answers.identity});completeSurvey();
       const rows=`<div class="result-card">${summaryRows().map(([k,v])=>`<div class="result-row"><span>${escapeHtml(k)}</span><span>${escapeHtml(v)}</span></div>`).join('')}</div>`;
       if(isRomantic()){
-        app.innerHTML=`<section class="panel final"><p class="eyebrow">APPROVED.</p><h1>You made it<span class="period">.</span></h1><p class="lede">Jetzt wird's interessant.</p>${rows}<a class="whatsapp" id="join" href="${whatsappUrl()}">Say hi</a><p class="micro">Deine Antworten stehen schon in der Nachricht. Vor dem Senden kannst du alles ändern.</p></section>`;
-        document.getElementById('join').addEventListener('click',()=>track('say_hi_clicked',{path:'romantic',scene:state.answers.scene}));
+        app.innerHTML=`<section class="panel final"><h1>Let's see where this goes<span class="period">.</span></h1>${rows}<a class="whatsapp" id="join" href="${whatsappUrl()}">Let's find out</a><p class="micro">Deine Antworten stehen schon in der Nachricht. Vor dem Senden kannst du alles ändern.</p></section>`;
+        document.getElementById('join').addEventListener('click',()=>track('romantic_contact_clicked',{path:'romantic',scene:state.answers.scene}));
       }else{
         app.innerHTML=`<section class="panel final"><p class="eyebrow">CHARACTER ACCEPTED.</p><h1>Quest unlocked<span class="period">.</span></h1><p class="lede">Geschafft.</p>${rows}<a class="whatsapp" id="join" href="${whatsappUrl()}">Join the party</a><p class="micro">Deine Antworten stehen schon in der Nachricht. Vor dem Senden kannst du alles ändern.</p></section>`;
         document.getElementById('join').addEventListener('click',()=>track('join_party_clicked',{path:'quest',quest:state.answers.quest}));
