@@ -7,7 +7,7 @@
   <meta name="color-scheme" content="dark" />
   <title>NOT YOUR BUSINESS.</title>
   <meta name="description" content="Character assessment in progress." />
-  <meta name="nyb-build" content="2026-09-24-romantic-v3" />
+  <meta name="nyb-build" content="2026-09-25-age-city-v1" />
   <script src="./analytics.js"></script>
   <!-- Canonical live build: GitHub Pages. Vercel redirect intentionally disabled to avoid version drift. -->
   <style>
@@ -120,7 +120,7 @@
     const sfxEl=document.getElementById('sfx');
 
     const initialStats=()=>({Brains:0,Courage:0,Charm:0,Stamina:0,Chaos:0});
-    const initialAnswers=()=>({identity:'',path:'',stats:initialStats(),interests:[],talent:'',moral:'',height:'',build:'',type:'',vibe:'',difficulty:'',scene:'',quest:''});
+    const initialAnswers=()=>({identity:'',path:'',age:'',city:'',stats:initialStats(),interests:[],talent:'',moral:'',height:'',build:'',type:'',vibe:'',difficulty:'',scene:'',quest:''});
     const state={screen:'identity',history:[],sound:true,appealed:false,interestsFull:false,answers:initialAnswers()};
 
     const analytics={lastView:''};
@@ -164,9 +164,9 @@
     function className(){const maxed=Object.entries(state.answers.stats).filter(([,v])=>v===5).map(([k])=>k);return maxed.length===2?(CLASS_NAMES[maxed.join('+')]||''):''}
 
     function expectedScreens(){
-      if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','romantic-profile','talent','difficulty','romantic-scene','final'];
-      if(state.answers.identity==='She'&&state.answers.path==='quest')return ['identity','path','stats','interests','talent','values','quest','final'];
-      if(state.answers.identity==='He')return ['identity','stats','interests','talent','values','quest','final'];
+      if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','about','romantic-profile','talent','difficulty','romantic-scene','final'];
+      if(state.answers.identity==='She'&&state.answers.path==='quest')return ['identity','path','about','stats','interests','talent','values','quest','final'];
+      if(state.answers.identity==='He')return ['identity','about','stats','interests','talent','values','quest','final'];
       return ['identity'];
     }
     function updateHud(){
@@ -184,13 +184,24 @@
     function renderIdentity(){
       trackView('identity');
       app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h1>Who are you<span class="period">?</span></h1><p class="lede">Character assessment in progress.<br>Quest locked.</p><div class="options"><button class="choice" type="button" data-identity="She"><span>She</span><span class="arrow">↗</span></button><button class="choice" type="button" data-identity="He"><span>He</span><span class="arrow">↗</span></button></div></section>`;
-      app.querySelectorAll('[data-identity]').forEach(b=>b.addEventListener('click',()=>{resetForIdentity();state.answers.identity=b.dataset.identity;track('gender_selected',{identity:b.dataset.identity});sfx('select');setTimeout(()=>{if(b.dataset.identity==='She')go('path');else{state.answers.path='quest';go('stats')}},105)}));
+      app.querySelectorAll('[data-identity]').forEach(b=>b.addEventListener('click',()=>{resetForIdentity();state.answers.identity=b.dataset.identity;track('gender_selected',{identity:b.dataset.identity});sfx('select');setTimeout(()=>{if(b.dataset.identity==='She')go('path');else{state.answers.path='quest';go('about')}},105)}));
     }
 
     function renderPath(){
       trackView('path');
       app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h2 class="question">Choose your path, traveler<span class="period">.</span></h2><div class="options"><button class="choice" type="button" data-path="romantic"><span>Secretly romantic.</span><span class="arrow">↗</span></button><button class="choice" type="button" data-path="quest"><span>I am here to embark on a quest.</span><span class="arrow">↗</span></button></div></section>`;
-      app.querySelectorAll('[data-path]').forEach(b=>b.addEventListener('click',()=>{const a=state.answers;if(a.path&&a.path!==b.dataset.path){a.moral='';a.height='';a.build='';a.type='';a.vibe='';a.difficulty='';a.scene='';a.quest='';state.appealed=false}a.path=b.dataset.path;track('path_selected',{path:b.dataset.path});sfx('select');setTimeout(()=>go(b.dataset.path==='romantic'?'romantic-profile':'stats'),105)}));
+      app.querySelectorAll('[data-path]').forEach(b=>b.addEventListener('click',()=>{const a=state.answers;if(a.path&&a.path!==b.dataset.path){a.moral='';a.height='';a.build='';a.type='';a.vibe='';a.difficulty='';a.scene='';a.quest='';state.appealed=false}a.path=b.dataset.path;track('path_selected',{path:b.dataset.path});sfx('select');setTimeout(()=>go('about'),105)}));
+    }
+
+    function renderAbout(){
+      trackView('about',{path:state.answers.path,identity:state.answers.identity});
+      const a=state.answers;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">ABOUT YOU.</p><h2 class="question">Alter & Stadt<span class="period">.</span></h2><div class="split"><div><p class="section-label" style="margin-top:0">Alter</p><input class="field" id="age" type="number" min="18" max="99" inputmode="numeric" autocomplete="bday" enterkeyhint="next" placeholder="z. B. 28" value="${escapeHtml(a.age)}" /></div><div><p class="section-label">Stadt</p><input class="field" id="city" maxlength="80" autocomplete="address-level2" enterkeyhint="done" placeholder="z. B. Pforzheim" value="${escapeHtml(a.city)}" /></div></div><button class="next" id="about-next" type="button">Weiter</button></section>`;
+      const age=document.getElementById('age');const city=document.getElementById('city');const next=document.getElementById('about-next');
+      const valid=()=>{const n=Number(age.value);return Number.isInteger(n)&&n>=18&&n<=99&&!!compact(city.value)};
+      const sync=()=>{next.disabled=!valid()};
+      const done=()=>{if(!valid())return;a.age=String(Number(age.value));a.city=compact(city.value);track('profile_basics_completed',{age_provided:true,city_provided:true,path:a.path,identity:a.identity});go(isRomantic()?'romantic-profile':'stats')};
+      age.addEventListener('input',sync);city.addEventListener('input',sync);age.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();city.focus()}});city.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();done()}});next.addEventListener('click',done);sync();
     }
 
     function renderTalent(){
@@ -273,6 +284,8 @@
     function travelerLine(){const a=state.answers;return a.identity+(a.identity==='She'&&a.path?` · ${a.path==='romantic'?'Secretly romantic':'Quest'}`:'')}
     function summaryRows(){
       const a=state.answers;const rows=[['Traveler',travelerLine()]];
+      if(a.age)rows.push(['Age',a.age]);
+      if(a.city)rows.push(['City',a.city]);
       if(a.talent)rows.push(['Secret talent',a.talent]);
       if(isRomantic()){
         rows.push(['Preferred type',[a.height,a.build,a.type].filter(Boolean).join(' · ')]);
@@ -315,6 +328,7 @@
       updateHud();
       if(state.screen==='identity')renderIdentity();
       else if(state.screen==='path')renderPath();
+      else if(state.screen==='about')renderAbout();
       else if(state.screen==='talent')renderTalent();
       else if(state.screen==='stats')renderStats();
       else if(state.screen==='interests')renderInterests();
