@@ -11,6 +11,7 @@ Use GitHub issue #1 as the active task specification. Do not replace it with a p
 - Read `AGENTS.md`.
 - Inspect the current source and production behavior.
 - Read issue #1 completely.
+- Read `docs/GAME_ENGINE_BUILD_GUIDE.md` completely and treat it as the binding engine/design build guide.
 - Produce a milestone plan before implementation.
 - Identify unresolved product or data-model decisions.
 - Do not create WhatsApp groups in this phase.
