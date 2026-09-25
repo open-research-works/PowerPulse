@@ -5,6 +5,7 @@ This repository powers the live NOT YOUR BUSINESS experience. Work conservativel
 
 ## Source of truth
 - Current implementation task: GitHub issue #1, `Codex: Social Roleplay Pool + WhatsApp Game Rooms MVP`.
+- Engine construction guide: `docs/GAME_ENGINE_BUILD_GUIDE.md` (binding for engine primitives, state machine, template schema, game families, tests and build order).
 - Concept/master planning note: `03_PLAN__Social_Roleplay__Matching_WhatsApp_Gruppen_Game_Engine__2026-09-25.md` in the project Drive.
 - Do not invent a competing plan or silently broaden scope.
 
