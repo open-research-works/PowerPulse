@@ -998,3 +998,403 @@ src/
     group-score.ts
     fairness.ts
     repeat-penalty.ts
+
+  content/
+    packs/
+    loader.ts
+    schemas.ts
+
+  server/
+    auth.ts
+    room-service.ts
+    run-service.ts
+    event-service.ts
+
+  ui/
+    pool/
+    waiting/
+    room/
+    private-role/
+    game-master/
+    reflection/
+
+tests/
+  engine/
+  matching/
+  authorization/
+  simulations/
+  e2e/
+```
+
+Dateinamen können an vorhandenes Framework angepasst werden; die Trennung der Verantwortungen bleibt.
+
+---
+
+## 18. Datenmodell
+
+### 18.1 `player_session`
+
+```text
+id
+user_id / anonymous_session_id
+age
+city
+region
+language
+mode_preferences
+intensity
+interests
+vibe
+status
+created_at
+expires_at
+```
+
+### 18.2 `pool_entry`
+
+```text
+id
+player_id
+joined_at
+availability_until
+preferred_group_size
+status
+matching_version
+```
+
+### 18.3 `game_room`
+
+```text
+id
+city
+capacity                # 3..5
+status
+whatsapp_invite_url     # protected server-side
+current_run_id
+created_at
+cooldown_until
+```
+
+### 18.4 `match_assignment`
+
+```text
+id
+player_id
+room_id
+match_batch_id
+score_components jsonb
+assigned_at
+accepted_at
+joined_confirmed_at
+```
+
+Unique Constraints:
+
+```text
+one active assignment per player
+room active assignments <= capacity
+capacity <= 5
+```
+
+### 18.5 `game_template`
+
+```text
+id
+version
+status
+min_players
+preferred_players
+max_players
+complexity
+modes
+intensity
+schema jsonb
+checksum
+```
+
+DB-Check:
+
+```text
+max_players <= 5
+```
+
+### 18.6 `game_run`
+
+```text
+id
+room_id
+template_id
+template_version
+state
+phase_id
+round_number
+phase_started_at
+version
+started_at
+ended_at
+```
+
+### 18.7 `game_player`
+
+```text
+run_id
+player_id
+seat
+role_id
+active_order
+status
+```
+
+### 18.8 `private_payload`
+
+```text
+id
+run_id
+player_id
+payload_type
+payload jsonb
+created_at
+revealed_at nullable
+```
+
+**RLS:** nur `player_id == auth.uid/session identity` darf lesen.
+
+### 18.9 `game_event`
+
+Append-only Audit/Event Log:
+
+```text
+id
+run_id
+sequence
+actor_player_id nullable
+event_type
+payload
+created_at
+idempotency_key
+```
+
+### 18.10 `template_history`
+
+```text
+player_id
+template_id
+played_at
+completion_state
+```
+
+---
+
+## 19. Supabase / Realtime
+
+Supabase eignet sich für den MVP, weil Postgres + RLS + Realtime verfügbar sind.
+
+### 19.1 RLS
+
+Auf allen exponierten Tabellen RLS aktivieren. Supabase empfiehlt RLS für granularen Zugriff und weist darauf hin, dass exponierte Tabellen ohne passende Schutzregeln problematisch sind.
+
+Quelle: https://supabase.com/docs/guides/database/postgres/row-level-security
+
+### 19.2 Realtime
+
+Verwendung:
+
+- `Broadcast` für Spielereignisse und Zustandsänderungen,
+- `Presence` sparsam für `online / ready`,
+- Postgres bleibt authoritative source.
+
+Supabase beschreibt Broadcast explizit auch für Game Events; für Datenänderungen wird Broadcast gegenüber Postgres Changes für Skalierbarkeit/Sicherheit empfohlen.
+
+Quelle: https://supabase.com/docs/guides/realtime  
+Quelle: https://supabase.com/docs/guides/realtime/subscribing-to-database-changes
+
+### 19.3 Private Channels
+
+Room-Kanäle:
+
+```text
+room:{room_id}
+run:{run_id}
+player:{player_id}:{run_id}
+```
+
+Private Player-Payload niemals über gemeinsamen Room-Channel schicken.
+
+---
+
+## 20. Server-Funktionen / API
+
+Minimum:
+
+```text
+POST /api/pool/join
+POST /api/pool/leave
+POST /api/match/run
+POST /api/match/{id}/accept
+GET  /api/room/current
+POST /api/room/join-confirm
+POST /api/run/start
+GET  /api/run/current
+GET  /api/run/my-private-state
+POST /api/run/action
+POST /api/run/skip
+POST /api/run/advance
+POST /api/run/abort
+```
+
+### 20.1 Server ist authoritative
+
+Client darf vorschlagen:
+
+```json
+{
+  "action": "submit_vote",
+  "choice": "A"
+}
+```
+
+Client darf nicht setzen:
+
+```json
+{
+  "state": "FINISHED",
+  "winner": "player_4"
+}
+```
+
+---
+
+## 21. Concurrency / Idempotenz
+
+### Matching
+
+Gruppenbildung muss transaktional erfolgen.
+
+Problem:
+
+Zwei parallele Matcher dürfen denselben Spieler nicht gleichzeitig zuweisen.
+
+Lösung:
+
+- DB-Transaktion,
+- `SELECT ... FOR UPDATE SKIP LOCKED` oder passende serverseitige DB-Funktion,
+- Unique Constraint auf aktive Assignment,
+- Assignment + Room Count atomar.
+
+### Aktionen
+
+Jede Mutation bekommt:
+
+```text
+idempotency_key
+```
+
+Doppelklick / Retry darf keine zweite Stimme, keine zweite Zuweisung und kein zweites Event erzeugen.
+
+---
+
+# TEIL I — WhatsApp-Schicht
+
+## 22. V1: vorab angelegte Räume
+
+Nicht pro Match neue Gruppe erstellen.
+
+Pilot:
+
+```text
+4 WhatsApp Game Rooms
+je Zielgröße 3–5
+```
+
+Backend speichert Invite-Link geschützt.
+
+Flow:
+
+```text
+MATCHED
+→ Room assigned
+→ Consent-Hinweis
+→ Invite-Link anzeigen
+→ Spieler tritt WhatsApp-Gruppe bei
+→ "Ich bin drin"
+→ READY
+→ Spielstart
+```
+
+### 22.1 WhatsApp-Link ist kein öffentliches Profilelement
+
+Nur zugewiesene Spieler dürfen ihn abrufen.
+
+### 22.2 Browserautomation durch Codex
+
+Erst nach Approval Gate:
+
+1. exakte Room-Liste ausgeben,
+2. Nutzer bestätigt,
+3. WhatsApp Web öffnen,
+4. nur bestätigte Gruppen erzeugen,
+5. Name + Settings setzen,
+6. Invite-Link holen,
+7. Backend-Konfiguration schreiben,
+8. jeden Room per Readback prüfen,
+9. bei Warnung/Rate-Limit stoppen.
+
+---
+
+# TEIL J — UX des Game Masters
+
+## 23. Gemeinsame Ansicht
+
+Zeigt nur gemeinsame Informationen:
+
+- Spielname,
+- Phase,
+- Timer,
+- gemeinsame Aufgabe,
+- Fortschritt,
+- Buttons `Ready`, `Nächste Runde`, falls erlaubt.
+
+## 24. Private Ansicht
+
+Pro Spieler:
+
+- Rolle,
+- geheimes Ziel,
+- geheime Information,
+- persönliche Aktion,
+- niemals Daten anderer Spieler.
+
+## 25. Wiederkehrende UX-Komponenten
+
+```text
+<PhaseHeader />
+<Timer />
+<PublicPrompt />
+<PrivateCard />
+<ChoiceGrid />
+<VotePanel />
+<RevealCard />
+<ReadyCheck />
+<SkipControl />
+<IntensityControl />
+<ReconnectBanner />
+```
+
+---
+
+# TEIL K — Testing
+
+## 26. Testpyramide
+
+### Unit Tests
+
+- Template Validator,
+- Transition Validator,
+- Score-Berechnung,
+- Repeat Penalty,
+- Role Assignment,
+- Timer-Berechnung.
+
+### Property / Invariant Tests
+
+Immer wahr:
