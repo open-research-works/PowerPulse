@@ -233,7 +233,7 @@
 
     function renderValues(){
       trackView('values',{path:state.answers.path});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR VALUES ARE UNDER ATTACK.</p><h2 class="question">You face a thousand men in battle<span class="period">.</span></h2><p class="lede" style="margin-top:-8px">Would you fight for what you believe in?</p><div class="options">${MORALS.map(v=>btnChoice(v,'moral','quest','values_answered')).join('')}</div></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR VALUES ARE UNDER ATTACK.</p><h2 class="question">You face thirty men in battle<span class="period">.</span></h2><p class="lede" style="margin-top:-8px">Would you fight for what you believe in?</p><div class="options">${MORALS.map(v=>btnChoice(v,'moral','quest','values_answered')).join('')}</div></section>`;
       bindSingleChoices();
     }
 
