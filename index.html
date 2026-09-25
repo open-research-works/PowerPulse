@@ -233,7 +233,7 @@
 
     function renderValues(){
       trackView('values',{path:state.answers.path});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">DEINE WERTE WERDEN AUF DIE PROBE GESTELLT.</p><h2 class="question">Du stehst 30 Männern im Kampf gegenüber<span class="period">.</span></h2><p class="lede" style="margin-top:-8px">Würdest du für das kämpfen, woran du glaubst?</p><div class="options">${MORALS.map(v=>btnChoice(v,'moral','quest','values_answered')).join('')}</div></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">DEINE WERTE WERDEN AUF DIE PROBE GESTELLT.</p><h2 class="question">Du stehst 30 Gegnern im Kampf gegenüber<span class="period">.</span></h2><p class="lede" style="margin-top:-8px">Würdest du für das kämpfen, woran du glaubst?</p><div class="options">${MORALS.map(v=>btnChoice(v,'moral','quest','values_answered')).join('')}</div></section>`;
       bindSingleChoices();
     }
 
