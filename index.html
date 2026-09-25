@@ -7,7 +7,7 @@
   <meta name="color-scheme" content="dark" />
   <title>NOT YOUR BUSINESS.</title>
   <meta name="description" content="Character assessment in progress." />
-  <meta name="nyb-build" content="2026-09-25-scene-v1" />
+  <meta name="nyb-build" content="2026-09-25-age-city-v1" />
   <script src="./analytics.js"></script>
   <!-- Canonical live build: GitHub Pages. Vercel redirect intentionally disabled to avoid version drift. -->
   <style>
@@ -308,22 +308,14 @@
     function whatsappUrl(){return `https://wa.me/${PHONE}?text=${encodeURIComponent(messageText())}`}
     function completeSurvey(){const a=state.answers;track('character_completed',{identity:a.identity,path:a.path,stats:a.stats,build_class:className(),interests:a.interests,talent:a.talent,moral:a.moral,height:a.height,build:a.build,type:a.type,vibe:a.vibe,difficulty:a.difficulty,scene:a.scene,quest:a.quest,appealed:state.appealed})}
 
-    function renderScene(){
-      trackView('scene_01',{path:state.answers.path,identity:state.answers.identity});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">SZENE 01</p><h2 class="question">Falscher Zug<span class="period">.</span></h2><p class="lede">Der Zug fährt seit 20 Minuten in die falsche Richtung. Ihr habt beide denselben Anschluss verpasst.</p><div class="result-card"><div class="result-row"><span>SPIELER A · DER PLANER</span><span>Du willst beim nächsten Halt zurück. Morgen früh wartet etwas Wichtiges auf dich. Sag nicht, was.</span></div><div class="result-row"><span>SPIELER B · DER ABENTEURER</span><span>Du willst weiterfahren. Du bist überzeugt, dass genau daraus eine gute Geschichte wird. Überzeuge A, ohne das Wort „spontan“ zu benutzen.</span></div></div><p class="section-label">REGELN</p><p class="lede">3 Minuten. Bleibt in der Rolle. Keine echten Berufe, kein Alter, keine Stadt.</p><p class="section-label">BREAK CHARACTER</p><p class="lede">Wann hast du zuletzt einen Plan geändert und warst im Nachhinein froh darüber?</p><button class="next" id="scene-done" type="button">Zurück zum Character Sheet</button></section>`;
-      document.getElementById('scene-done').addEventListener('click',()=>{track('scene_completed',{scene:'wrong_train_01'});go('final',{replace:true,sound:'next'})});
-    }
-
     function renderFinal(){
       trackView('final',{path:state.answers.path,identity:state.answers.identity});completeSurvey();
       const rows=`<div class="result-card">${summaryRows().map(([k,v])=>`<div class="result-row"><span>${escapeHtml(k)}</span><span>${escapeHtml(v)}</span></div>`).join('')}</div>`;
       if(isRomantic()){
-        app.innerHTML=`<section class="panel final"><h1>Let's see where this goes<span class="period">.</span></h1>${rows}<button class="next" id="scene-start" type="button">Eine Szene spielen</button><a class="whatsapp" id="join" href="${whatsappUrl()}">Let's find out</a><p class="micro">Deine Antworten stehen schon in der Nachricht. Vor dem Senden kannst du alles ändern.</p></section>`;
-        document.getElementById('scene-start').addEventListener('click',()=>{track('scene_started',{scene:'wrong_train_01',path:'romantic'});go('scene')});
+        app.innerHTML=`<section class="panel final"><h1>Let's see where this goes<span class="period">.</span></h1>${rows}<a class="whatsapp" id="join" href="${whatsappUrl()}">Let's find out</a><p class="micro">Deine Antworten stehen schon in der Nachricht. Vor dem Senden kannst du alles ändern.</p></section>`;
         document.getElementById('join').addEventListener('click',()=>track('romantic_contact_clicked',{path:'romantic',scene:state.answers.scene}));
       }else{
         app.innerHTML=`<section class="panel final"><p class="eyebrow">CHARACTER ACCEPTED.</p><h1>Quest unlocked<span class="period">.</span></h1><p class="lede">Geschafft.</p>${rows}<button class="next" id="scene-start" type="button">Eine Szene spielen</button><a class="whatsapp" id="join" href="${whatsappUrl()}">Join the party</a><p class="micro">Deine Antworten stehen schon in der Nachricht. Vor dem Senden kannst du alles ändern.</p></section>`;
-        document.getElementById('scene-start').addEventListener('click',()=>{track('scene_started',{scene:'wrong_train_01',path:'quest'});go('scene')});
         document.getElementById('join').addEventListener('click',()=>track('join_party_clicked',{path:'quest',quest:state.answers.quest}));
       }
     }
@@ -347,7 +339,6 @@
       else if(state.screen==='denied')renderDenied();
       else if(state.screen==='exception')renderException();
       else if(state.screen==='quest')renderQuest();
-      else if(state.screen==='scene')renderScene();
       else if(state.screen==='final')renderFinal();
     }
 
