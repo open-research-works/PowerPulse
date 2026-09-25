@@ -1398,3 +1398,543 @@ Pro Spieler:
 ### Property / Invariant Tests
 
 Immer wahr:
+
+```text
+room.capacity <= 5
+active_assignments <= room.capacity
+player has <= 1 active assignment
+private_payload belongs to exactly one player
+run phase exists in template
+Deep phase is skippable
+```
+
+### Simulation
+
+Mindestens:
+
+- 20 simulierte Spieler für MVP-Abnahme,
+- zusätzlich 100 simulierte Sessions vor breiter Beta.
+
+Szenarien:
+
+- ungerade Poolgröße,
+- mehrere Städte,
+- 3er/4er/5er-Gruppen,
+- ein Spieler lehnt Match ab,
+- zwei Spieler disconnecten,
+- Room voll,
+- Room-Link fehlt,
+- alle haben dasselbe Template kürzlich gespielt,
+- lange wartender Spieler,
+- parallele Matchmaker.
+
+### Authorization / Two-User Negative Tests
+
+Verbindlich:
+
+```text
+A cannot GET B private payload
+A cannot PATCH B action
+A cannot fetch another room invite
+A cannot move B to another room
+A cannot mark B ready
+A cannot reveal B secret
+```
+
+### E2E
+
+Mindestens zwei reale Browser-Sessions:
+
+```text
+User A
+User B
+(+ optional C/D/E)
+```
+
+Test vollständiger Ablauf:
+
+```text
+Join Pool
+→ Match
+→ Accept
+→ Room
+→ Ready
+→ private role
+→ public phase
+→ action
+→ reveal
+→ next round
+→ finish
+```
+
+---
+
+# TEIL L — Playtesting wie ein Produkt, nicht wie ein Bauchgefühl
+
+## 27. Nach jeder Session erfassen
+
+Keine sensiblen Inhalte speichern; nur Produktmetriken.
+
+```text
+join_to_match_seconds
+match_accept_rate
+ready_completion_rate
+session_completion_rate
+time_to_first_action
+average_round_duration
+skip_rate
+lower_intensity_rate
+reconnect_count
+rules_help_opened
+abandon_phase
+would_play_again
+would_play_with_new_people
+```
+
+### 27.1 Qualitative Fragen
+
+Maximal 3 kurze Fragen:
+
+1. Wo warst du kurz verwirrt?
+2. Welche Runde war am besten?
+3. Würdest du mit einer neuen Gruppe nochmal spielen?
+
+### 27.2 Erfolgsdefinition für ein Template
+
+Ein Template wird nicht wegen einer lustigen Einzelrunde LIVE.
+
+Vorschlag:
+
+```text
+>= 10 Test-Sessions
+keine kritischen Safety-Probleme
+keine wiederkehrende Regelverwirrung
+hohe Completion
+mehrheitlich "würde nochmal spielen"
+```
+
+Keine starre statistische Aussage bei kleinen Samples; Daten dienen zunächst zum Tuning.
+
+---
+
+# TEIL M — Bau-Reihenfolge für Codex
+
+## 28. Milestone 0 — Repo verstehen
+
+Codex:
+
+1. `AGENTS.md` lesen.
+2. `.agents/skills/social-roleplay-mvp/SKILL.md` lesen.
+3. GitHub Issue #1 lesen.
+4. dieses Dokument lesen.
+5. aktuellen Flow und Deploymentstruktur prüfen.
+6. `/plan` erstellen.
+
+**Kein Code ändern, bevor Plan + Risiken dokumentiert sind.**
+
+Abnahme:
+
+- Architekturplan,
+- offene Fragen,
+- Migrationsplan,
+- Testplan.
+
+---
+
+## 29. Milestone 1 — Engine Types + Template Validator
+
+Bauen:
+
+- TypeScript-Typen,
+- Template-Schema,
+- Validator,
+- State/Phase-Enums,
+- Beispieltemplate als Testfixture.
+
+Abnahme:
+
+- `max_players > 5` wird abgelehnt,
+- ungültige Transitions werden abgelehnt,
+- Deep ohne Skip wird abgelehnt,
+- alle Tests grün.
+
+---
+
+## 30. Milestone 2 — Persistenz + RLS
+
+Bauen:
+
+- Datenbankmigrationen,
+- RLS,
+- Testnutzer,
+- private Payloads.
+
+Abnahme:
+
+- Two-user negative tests grün,
+- keine private Cross-Read-Möglichkeit,
+- keine Room-Link-Cross-Read-Möglichkeit.
+
+---
+
+## 31. Milestone 3 — Pool + Matching
+
+Bauen:
+
+- Join/Leave,
+- Hard Filters,
+- Group Builder,
+- Soft Score,
+- Repeat Penalty,
+- Fairness,
+- atomare Assignments.
+
+Abnahme:
+
+- 20 simulierte Spieler,
+- keine Doppelzuweisung,
+- nie >5,
+- bevorzugt 3–4,
+- lange Wartende werden nicht dauerhaft verdrängt.
+
+---
+
+## 32. Milestone 4 — Run Engine / State Machine
+
+Bauen:
+
+- `startRun`,
+- `submitAction`,
+- `advance`,
+- `reveal`,
+- `finish`,
+- Audit Log,
+- Recovery.
+
+Abnahme:
+
+- Reload mitten in Runde funktioniert,
+- doppelte Requests idempotent,
+- ungültiger State-Sprung blockiert.
+
+---
+
+## 33. Milestone 5 — Vier erste Spieltemplates
+
+Nicht vier Varianten desselben Spiels.
+
+### Template 1 — Story Web
+3–4 Spieler
+
+### Template 2 — Secret Signal
+3–5 Spieler
+
+### Template 3 — Cooperative Mission
+3–5 Spieler
+
+### Template 4 — Social Calibration + optional REAL
+3–5 Spieler
+
+Abnahme pro Template:
+
+- eigene Inhalte,
+- Schema valide,
+- 3/4/5er Verhalten getestet,
+- kein Spieler ohne Aufgabe,
+- kompletter Run automatisiert testbar.
+
+---
+
+## 34. Milestone 6 — Game Master UI
+
+Bauen:
+
+- Shared View,
+- Private View,
+- Timer,
+- Ready,
+- Reveal,
+- Skip,
+- Reconnect.
+
+Abnahme:
+
+- Mobil gut bedienbar,
+- private Informationen nicht im DOM/Netzwerkpayload anderer Spieler,
+- klar erkennbar, was als Nächstes zu tun ist.
+
+---
+
+## 35. Milestone 7 — WhatsApp Room Routing ohne Browserautomation
+
+Bauen:
+
+- Room Config,
+- geschützte Invite-Links,
+- Consent-Screen,
+- `I joined`,
+- Ready-State.
+
+Mit Dummy-/manuell hinterlegten Links testen.
+
+**Noch keine WhatsApp-Gruppen automatisch erzeugen.**
+
+---
+
+## 36. Milestone 8 — Browser-Provisioning
+
+Erst nach Nutzerfreigabe.
+
+Codex erzeugt die vereinbarten 4 Rooms, nicht mehr.
+
+Abnahme:
+
+- jeder Room existiert,
+- Name korrekt,
+- Settings geprüft,
+- Invite-Link korrekt im Backend,
+- Readback dokumentiert,
+- keine Kontakte massenhaft hinzugefügt.
+
+---
+
+## 37. Milestone 9 — echter Pilot
+
+Ziel:
+
+```text
+10–20 Personen
+1 Stadt
+3–5 Personen je Session
+4 Rooms
+4 Templates
+```
+
+Erst danach entscheiden:
+
+- mehr Content,
+- bessere Matching-Gewichte,
+- Monetarisierung,
+- Gift-/Date-/Travel-Packs,
+- zusätzliche Städte.
+
+---
+
+# TEIL N — Beispiel eines vollständigen ORIGINALEN Testtemplates
+
+## 38. `lost_package_001` — nur interne Testfixture
+
+**Nicht automatisch LIVE stellen.**
+
+```yaml
+id: lost_package_001
+version: 1
+status: internal_test
+name: "Das falsche Paket"
+player_count:
+  min: 3
+  preferred: 4
+  max: 5
+estimated_minutes: 18
+complexity: 2
+modes: [mystery, roleplay]
+intensity: light
+requires_whatsapp_group: true
+requires_private_roles: true
+elimination: false
+repeat_after_days: 21
+
+roles:
+  - id: receiver
+    public_trait: "Das Paket wurde dir zugestellt."
+    private_goal: "Finde heraus, für wen es wirklich gedacht war."
+  - id: organizer
+    public_trait: "Du kennst den Treffpunkt."
+    private_goal: "Verhindere, dass die Gruppe zu früh den Ort wechselt."
+  - id: witness
+    public_trait: "Du hast etwas gesehen."
+    private_goal: "Gib deinen wichtigsten Hinweis erst nach der ersten Abstimmung."
+  - id: wildcard
+    optional_for_players: [4,5]
+    public_trait: "Du bist zufällig hineingeraten."
+    private_goal: "Bringe mindestens zwei andere dazu, ihre erste Vermutung zu ändern."
+  - id: courier
+    optional_for_players: [5]
+    public_trait: "Du weißt, wie die Lieferung normalerweise läuft."
+    private_goal: "Schütze eine Information bis zum Twist."
+
+phases:
+  - id: intro
+    type: public_prompt
+    text: "Ein Paket liegt am vereinbarten Ort. Name und Inhalt passen zu niemandem vollständig. Ihr habt 15 Minuten, bevor es abgeholt wird."
+
+  - id: private
+    type: private_prompt
+    payload: role_payload
+    wait_for: all_acknowledged
+
+  - id: discuss_1
+    type: discussion
+    timer_seconds: 240
+    constraint: "Niemand darf sein geheimes Ziel wörtlich nennen."
+
+  - id: vote_1
+    type: vote
+    question: "Für wen war das Paket wahrscheinlich gedacht?"
+    visibility: secret_until_all
+
+  - id: twist
+    type: reveal
+    text_ref: twist_variant_pool
+
+  - id: discuss_2
+    type: discussion
+    timer_seconds: 300
+
+  - id: final_choice
+    type: choice
+    question: "Was macht ihr mit dem Paket?"
+    options_ref: ending_choices
+
+  - id: real_bridge
+    type: reflection
+    optional: true
+    intensity: real_1
+    text: "Wann hast du zuletzt deine Meinung geändert, weil jemand einen guten Punkt hatte?"
+
+end:
+  type: aftermath
+  text_ref: aftermath_variant_pool
+```
+
+### Warum dieses Template als Fixture geeignet ist
+
+Es testet gleichzeitig:
+
+- 3/4/5 Spieler,
+- optionale Rollen,
+- private Ziele,
+- Timer,
+- Diskussion,
+- geheime Abstimmung,
+- Reveal,
+- optionalen REAL-Übergang,
+- unterschiedliche Enden,
+- keine Eliminierung.
+
+---
+
+# TEIL O — Was Codex selbst herausfinden darf und was nicht
+
+## 39. Darf Codex selbst entscheiden
+
+- konkrete Framework-/Dateistruktur innerhalb des bestehenden Repos,
+- geeignete Libraries,
+- Migrationssyntax,
+- Testframework-Details,
+- Implementierungsdetails für State Machine,
+- UI-Komponentenstruktur,
+- Performanceoptimierung,
+- interne Helper.
+
+## 40. Darf Codex NICHT eigenmächtig ändern
+
+- Maximal 5 Spieler,
+- 18+,
+- WhatsApp = Kommunikationsraum, App = Game Master,
+- keine Telefonnummern im Backend,
+- keine Massenzugabe/Scraping,
+- Deep optional,
+- keine privaten Cross-Reads,
+- keine Live-Szene bevor Pool/Room-Zuweisung vorhanden,
+- kein WhatsApp-Provisioning ohne Approval,
+- keine proprietären Spieltexte kopieren,
+- kein `DONE` ohne Tests + Readback.
+
+---
+
+# TEIL P — Definition of Done der Engine V1
+
+## 41. V1 ist fertig, wenn
+
+- Engine 3, 4 und 5 Spieler korrekt unterstützt,
+- niemals >5 zugewiesen werden,
+- vier mechanisch unterschiedliche Templates funktionieren,
+- neue Templates ohne Engine-Codeänderung hinzugefügt werden können,
+- private/public State sauber getrennt ist,
+- State Machine server-authoritativ ist,
+- Runs nach Reload fortgesetzt werden können,
+- Matching + Template-Auswahl nachvollziehbar ist,
+- Repeat-Vermeidung funktioniert,
+- RLS/Cross-user-Tests grün sind,
+- WhatsApp Room-Link nur zugewiesenen Spielern gezeigt wird,
+- kompletter E2E-Durchlauf funktioniert,
+- bestehender Character-Flow nicht regressiert,
+- Produktion nicht mit unfertigen Spielmodi belastet wird.
+
+---
+
+# Quellen / Referenzen
+
+## Spiele und Mechaniken
+
+- Just One / Spiel des Jahres 2019: https://www.spiel-des-jahres.de/just-one-ist-das-spiel-des-jahres-2019/
+- Repos Production — Just One: https://www.rprod.com/de/games/just-one
+- Codenames / Spiel des Jahres 2016: https://www.spiel-des-jahres.de/erjahr/2016/
+- Codenames Rules: https://czechgames.com/files/rules/codenames-rules-en.pdf
+- Die Crew / Kennerspiel des Jahres 2020: https://www.spiel-des-jahres.de/spiel-des-jahres-2020-kennerspiel-des-jahres/
+- Die Crew Rules: https://thamesandkosmos.com/manuals/full/691868_Crew_Manual.pdf
+- The Mind: https://pandasaurusgames.com/products/the-mind
+- Fiasco: https://bullypulpitgames.com/products/fiasco
+- Fiasco DIY License: https://bullypulpitgames.com/pages/fiasco-diy-license
+- Alice is Missing: https://www.huntersentertainment.com/alice-is-missing
+- For the Queen: https://darringtonpress.com/forthequeen/
+- Decrypto: https://www.scorpionmasque.com/en/decrypto
+- Decrypto official shop / awards claim: https://shop.scorpionmasque.com/products/decrypto
+- Wavelength: https://www.cmyk.games/products/wavelength
+- Fun Facts: https://www.rprod.com/en/press/fun-facts
+
+## Game-Design-Rahmen
+
+- MDA: https://aaai.org/papers/ws04-04-001-mda-a-formal-approach-to-game-design-and-game-research/
+
+## Backend / Realtime
+
+- Supabase RLS: https://supabase.com/docs/guides/database/postgres/row-level-security
+- Supabase Realtime: https://supabase.com/docs/guides/realtime
+- Supabase Realtime Broadcast / DB Changes: https://supabase.com/docs/guides/realtime/subscribing-to-database-changes
+- Supabase Realtime Authorization: https://supabase.com/docs/guides/realtime/authorization
+- Vercel Functions: https://vercel.com/docs/functions
+
+---
+
+## Kurzfassung für Codex
+
+```text
+Baue keine Sammlung zufälliger Szenen.
+Baue eine Engine aus wiederverwendbaren Mechanik-Primitiven.
+
+Standardgruppe: 3–4
+Maximum: 5
+
+Engine =
+  Matching
++ Template Registry
++ State Machine
++ private/public information
++ role assignment
++ timers
++ actions/votes/guesses
++ reveals
++ recovery
++ audit log
++ safety controls
+
+Content = Daten, nicht neue Engine-Branches.
+
+Inspiration aus etablierten Spielen nur auf Mechanikebene.
+Keine proprietären Texte kopieren.
+
+WhatsApp ist V1 nur Kommunikationsraum.
+Kein Browser-Provisioning ohne Approval.
+```
