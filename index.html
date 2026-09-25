@@ -143,7 +143,7 @@
     }
 
     const INTERESTS=['Coding','Sports','Gaming','Creative','Art','Music','Outdoors','Business','Building stuff','Aura farming'];
-    const MORALS=['Without hesitation.','Depends what we\'re fighting for.','I\'d rather outsmart them.','I\'m not dying for a side quest.'];
+    const MORALS=['Ohne zu zögern.','Depends what we\'re fighting for.','I\'d rather outsmart them.','I\'m not dying for a side quest.'];
     const HEIGHTS=['Hobbit · ~160 cm','~175 cm','182+ cm'];
     const BUILDS=['Muscle','Lean','Dad bod'];
     const TYPES=['Hard to get','Wild Cat','Kreativ','Freigeist','Ruhepol','Bum · viel Zeit, wenig Geld'];
@@ -233,7 +233,7 @@
 
     function renderValues(){
       trackView('values',{path:state.answers.path});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR VALUES ARE UNDER ATTACK.</p><h2 class="question">You face thirty men in battle<span class="period">.</span></h2><p class="lede" style="margin-top:-8px">Would you fight for what you believe in?</p><div class="options">${MORALS.map(v=>btnChoice(v,'moral','quest','values_answered')).join('')}</div></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">DEINE WERTE WERDEN AUF DIE PROBE GESTELLT.</p><h2 class="question">Du stehst 30 Männern im Kampf gegenüber<span class="period">.</span></h2><p class="lede" style="margin-top:-8px">Würdest du für das kämpfen, woran du glaubst?</p><div class="options">${MORALS.map(v=>btnChoice(v,'moral','quest','values_answered')).join('')}</div></section>`;
       bindSingleChoices();
     }
 
