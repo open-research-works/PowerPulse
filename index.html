@@ -307,7 +307,7 @@
       input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();done()}});
       btn.addEventListener('click',done);
     }
-    function renderCurrent(){renderTextStep('current','FAST GESCHAFFT.','Was ist deine aktuelle Quest','Ein Projekt, ein Ziel, etwas, das du lernst …','side','current_quest_completed')}
+    function renderCurrent(){renderTextStep('current','FAST GESCHAFFT.','Auf welcher Quest bist du gerade','Ein Projekt, ein Ziel, etwas, das du lernst …','side','current_quest_completed')}
     function renderSide(){renderTextStep('side','LETZTE FRAGE.','Und deine Sidequest','Was nebenbei noch läuft …','final','side_quest_completed')}
 
     function travelerLine(){const a=state.answers;return a.identity+(a.identity==='She'&&a.path?` · ${a.path==='romantic'?'Secretly romantic':'Quest'}`:'')}
