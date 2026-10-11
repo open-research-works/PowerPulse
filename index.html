@@ -118,7 +118,7 @@
     const sfxEl=document.getElementById('sfx');
 
     const initialStats=()=>({Brains:0,Courage:0,Charm:0,Stamina:0,Chaos:0});
-    const initialAnswers=()=>({identity:'',path:'',age:'',city:'',stats:initialStats(),interests:[],custom:'',talent:'',trick:'',moral:'',height:'',build:'',type:'',vibe:'',difficulty:'',scene:'',quest:'',current:'',side:''});
+    const initialAnswers=()=>({identity:'',path:'',age:'',city:'',stats:initialStats(),interests:[],custom:'',talent:'',match:'',trick:'',moral:'',height:'',build:'',type:'',vibe:'',difficulty:'',scene:'',quest:'',current:'',side:''});
     const state={screen:'identity',history:[],sound:true,appealed:false,interestsFull:false,answers:initialAnswers()};
 
     const analytics={lastView:''};
@@ -140,13 +140,14 @@
       else if(kind==='success'){tone(880,.08,'sine',.02);tone(1320,.16,'sine',.018,.085);navigator.vibrate?.(18)}
     }
 
-    const INTERESTS=['Coding','Sports','Gaming','Creative','Art','Music','Outdoors','Business','Building stuff','Aura farming'];
+    const INTERESTS=['Coding','Sports','Gaming','Creative','Art','Music','Outdoors','Business','Building stuff','Aura farming','Dancing queen','Comedic genius'];
     const TRICKS=['Ich lege eine falsche Fährte.','Ich biete ihnen einen Handel an, der keiner ist.','Wir warten bis zur Nacht und schleichen vorbei.','Ich bluffe: Hinter uns kommt eine ganze Armee.'];
     const MORALS=['Ohne zu zögern.','Ich stelle mich vor die, die mir wichtig sind.','Ja, auch wenn ich allein dastehe.','Für eine Nebenquest sterbe ich nicht.'];
     const HEIGHTS=['Hobbit · ~160 cm','~175 cm','182+ cm'];
     const BUILDS=['Muscle','Lean','Dad bod'];
-    const TYPES=['Hard to get','Wild Cat','Kreativ','Freigeist','Ruhepol','Bum · viel Zeit, wenig Geld'];
-    const VIBES=['Netflix & chill','Cinema','Anime night','Horror night','So bad it\'s good'];
+    const MATCHES=['Abenteurer','Nerd mit Herz','Ruhepol','Macher','Kreativkopf','Charmeur','Überrasch mich'];
+    const TYPES=['Hard to get','Wild Cat','Kreativ','Freigeist','Ruhepol'];
+    const VIBES=['Netflix & chill','Cinema','Anime night','Horror night','So bad it\'s good','Game night','Live music','Cooking together'];
     const DIFFICULTIES=['Nur schauen, nicht anfassen.','Noch geheim.','You don’t know what you’re in for.','Fantasyroman mit Romantik.','Soap Opera.'];
     const ROMANTIC_SCENES=['Over coffee or drinks.','At the cinema.','On a night drive.','Auf einer Wanderung.','Anime night.','Bei einem Plan mit abenteuerlichem Ausgang.','Surprise me.'];
     const QUESTS=['Building something stupid.','Coding something useful.','In the middle of a gym challenge.','On a questionable hike.','On a road trip.','Making money.','Learning a ridiculous skill.'];
@@ -163,13 +164,13 @@
     function className(){const maxed=Object.entries(state.answers.stats).filter(([,v])=>v===5).map(([k])=>k);return maxed.length===2?(CLASS_NAMES[maxed.join('+')]||''):''}
 
     function expectedScreens(){
-      if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','about','romantic-profile','talent','difficulty','romantic-scene','final'];
-      if(state.answers.identity==='She'&&state.answers.path==='quest')return ['identity','path','about','stats','interests','talent','story','trick','values','quest','current','side','final'];
-      if(state.answers.identity==='He')return ['identity','about','stats','interests','talent','story','trick','values','quest','current','side','final'];
+      if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','about','romantic-profile','match','interests','talent','current','romantic-scene','final'];
+      if(state.answers.identity==='She'&&state.answers.path==='quest')return ['identity','path','about','interests','talent','story','trick','values','quest','current','side','final'];
+      if(state.answers.identity==='He')return ['identity','about','interests','talent','story','trick','values','quest','current','side','final'];
       return ['identity'];
     }
     function updateHud(){
-      back.classList.toggle('visible',state.history.length>0&& !['final','denied','exception'].includes(state.screen));
+      back.classList.toggle('visible',state.history.length>0&& !['denied','exception'].includes(state.screen));
       const flow=expectedScreens();const idx=flow.indexOf(state.screen);
       stepEl.textContent=flow.length>1&&idx>=0?`${String(idx+1).padStart(2,'0')} / ${String(flow.length).padStart(2,'0')}`:'';
       sfxEl.classList.toggle('off',!state.sound);sfxEl.setAttribute('aria-pressed',String(state.sound));
@@ -182,7 +183,7 @@
 
     function renderIdentity(){
       trackView('identity');
-      app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h1>Who are you<span class="period">?</span></h1><p class="lede">Character assessment in progress.<br>Quest locked.</p><div class="options"><button class="choice" type="button" data-identity="She"><span>She</span><span class="arrow">↗</span></button><button class="choice" type="button" data-identity="He"><span>He</span><span class="arrow">↗</span></button></div></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h1>Who are you<span class="period">?</span></h1><p class="lede">Character assessment in progress.<br>Quest locked.</p><p class="hint">Am Ende kannst du mir auf WhatsApp schreiben – nur wenn du willst.</p><div class="options"><button class="choice" type="button" data-identity="She"><span>She</span><span class="arrow">↗</span></button><button class="choice" type="button" data-identity="He"><span>He</span><span class="arrow">↗</span></button></div></section>`;
       app.querySelectorAll('[data-identity]').forEach(b=>b.addEventListener('click',()=>{resetForIdentity();state.answers.identity=b.dataset.identity;track('gender_selected',{identity:b.dataset.identity});sfx('select');setTimeout(()=>{if(b.dataset.identity==='She')go('path');else{state.answers.path='quest';go('about')}},105)}));
     }
 
@@ -199,7 +200,7 @@
       const age=document.getElementById('age');const city=document.getElementById('city');const next=document.getElementById('about-next');
       const valid=()=>{const n=Number(age.value);return Number.isInteger(n)&&n>=18&&n<=99&&!!compact(city.value)};
       const sync=()=>{next.disabled=!valid()};
-      const done=()=>{if(!valid())return;a.age=String(Number(age.value));a.city=compact(city.value);track('profile_basics_completed',{age_provided:true,city_provided:true,path:a.path,identity:a.identity});go(isRomantic()?'romantic-profile':'stats')};
+      const done=()=>{if(!valid())return;a.age=String(Number(age.value));a.city=compact(city.value);track('profile_basics_completed',{age_provided:true,city_provided:true,path:a.path,identity:a.identity});go(isRomantic()?'romantic-profile':'interests')};
       age.addEventListener('input',sync);city.addEventListener('input',sync);age.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();city.focus()}});city.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();done()}});next.addEventListener('click',done);sync();
     }
 
@@ -209,7 +210,7 @@
       const hasTalent=!!compact(state.answers.talent);
       app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR STAT</p><h2 class="question">Secret talent<span class="period">?</span></h2><input class="field" id="talent" maxlength="120" autocomplete="off" enterkeyhint="next" placeholder="Etwas, das man dir nicht ansieht …" value="${escapeHtml(state.answers.talent)}" /><p class="counter" id="talent-count">${state.answers.talent.length} / 120</p><button class="next" id="talent-next" type="button" ${required&&!hasTalent?'disabled':''}>${hasTalent?'Weiter':required?'Weiter':'Weiter'}</button></section>`;
       const input=document.getElementById('talent');const count=document.getElementById('talent-count');const next=document.getElementById('talent-next');
-      const done=()=>{const value=compact(input.value);if(required&&!value)return;state.answers.talent=value;track('stat_text_completed',{talent:state.answers.talent,skipped:!value,length:state.answers.talent.length,path:state.answers.path});go(isRomantic()?'difficulty':'story')};
+      const done=()=>{const value=compact(input.value);if(required&&!value)return;state.answers.talent=value;track('stat_text_completed',{talent:state.answers.talent,skipped:!value,length:state.answers.talent.length,path:state.answers.path});go(isRomantic()?'current':'story')};
       input.addEventListener('input',()=>{const value=compact(input.value);count.textContent=`${input.value.length} / 120`;next.disabled=required&&!value;next.textContent=value?'Weiter':required?'Weiter':'Weiter'});
       input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();done()}});
       next.addEventListener('click',done);
@@ -255,11 +256,20 @@
 
     function renderRomanticProfile(){
       trackView('romantic_profile');
-      const a=state.answers;const ready=a.height&&a.build&&a.type&&a.vibe;
+      const a=state.answers;const ready=a.type&&a.vibe;
       const group=(label,key,values,layout,first)=>`<div><p class="section-label"${first?' style="margin-top:0"':''}>${label}</p><div class="${layout}">${values.map(v=>`<button class="${layout==='chips'?'chip':'mini'}${a[key]===v?' selected':''}" type="button" data-profile="${key}" data-value="${escapeHtml(v)}">${escapeHtml(v).replace(' cm','&nbsp;cm')}</button>`).join('')}</div></div>`;
-      app.innerHTML=`<section class="panel"><p class="eyebrow">PREFERRED TYPE.</p><h2 class="question">Was ist eher dein Typ<span class="period">?</span></h2><div class="split">${group('Größe?','height',HEIGHTS,'compact-options three',true)}${group('Statur?','build',BUILDS,'compact-options three')}${group('Typ?','type',TYPES,'chips')}${group('Vibe?','vibe',VIBES,'chips')}</div><button class="next" id="profile-next" type="button" ${ready?'':'disabled'}>Weiter</button></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR TYPE.</p><h2 class="question">Wie bist du so<span class="period">?</span></h2><div class="split">${group('Welcher Typ bist du?','type',TYPES,'chips',true)}${group('Perfekter Abend?','vibe',VIBES,'chips')}</div><button class="next" id="profile-next" type="button" ${ready?'':'disabled'}>Weiter</button></section>`;
       app.querySelectorAll('[data-profile]').forEach(b=>b.addEventListener('click',()=>{state.answers[b.dataset.profile]=b.dataset.value;track('answer_selected',{question:b.dataset.profile,choice:b.dataset.value});sfx('select');render()}));
-      document.getElementById('profile-next')?.addEventListener('click',()=>{track('attraction_answered',{height:a.height,build:a.build,type:a.type,vibe:a.vibe});go('talent')});
+      document.getElementById('profile-next')?.addEventListener('click',()=>{track('attraction_answered',{type:a.type,vibe:a.vibe});go('match')});
+    }
+
+    function renderMatch(){
+      trackView('match');
+      const a=state.answers;const ready=a.height&&a.build&&a.match;
+      const group=(label,key,values,layout,first)=>`<div><p class="section-label"${first?' style="margin-top:0"':''}>${label}</p><div class="${layout}">${values.map(v=>`<button class="${layout==='chips'?'chip':'mini'}${a[key]===v?' selected':''}" type="button" data-profile="${key}" data-value="${escapeHtml(v)}">${escapeHtml(v).replace(' cm','&nbsp;cm')}</button>`).join('')}</div></div>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR MATCH.</p><h2 class="question">Und wer ist dein Typ<span class="period">?</span></h2><div class="split">${group('Größe?','height',HEIGHTS,'compact-options three',true)}${group('Statur?','build',BUILDS,'compact-options three')}${group('Persönlichkeit?','match',MATCHES,'chips')}</div><button class="next" id="match-next" type="button" ${ready?'':'disabled'}>Weiter</button></section>`;
+      app.querySelectorAll('[data-profile]').forEach(b=>b.addEventListener('click',()=>{state.answers[b.dataset.profile]=b.dataset.value;track('answer_selected',{question:b.dataset.profile,choice:b.dataset.value});sfx('select');render()}));
+      document.getElementById('match-next')?.addEventListener('click',()=>{track('match_answered',{height:a.height,build:a.build,match:a.match});go('interests')});
     }
 
     function renderDifficulty(){
@@ -275,7 +285,7 @@
     }
 
     function finishRomantic(){
-      track('romantic_gate_evaluated',{height:state.answers.height,build:state.answers.build,type:state.answers.type,preferred:isPreferred()});
+      track('romantic_gate_evaluated',{height:state.answers.height,build:state.answers.build,preferred:isPreferred()});
       if(isPreferred())go('final',{sound:'success'});else{sfx('fail');go('denied',{sound:null})}
     }
 
@@ -307,7 +317,7 @@
       input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();done()}});
       btn.addEventListener('click',done);
     }
-    function renderCurrent(){renderTextStep('current','FAST GESCHAFFT.','Auf welcher Quest bist du gerade','Ein Projekt, ein Ziel, etwas, das du lernst …','side','current_quest_completed')}
+    function renderCurrent(){renderTextStep('current','FAST GESCHAFFT.','Auf welcher Quest bist du gerade','Ein Projekt, ein Ziel, etwas, das du lernst …',isRomantic()?'romantic-scene':'side','current_quest_completed')}
     function renderSide(){renderTextStep('side','LETZTE FRAGE.','Und deine Sidequest','Was nebenbei noch läuft …','final','side_quest_completed')}
 
     function travelerLine(){const a=state.answers;return a.identity+(a.identity==='She'&&a.path?` · ${a.path==='romantic'?'Secretly romantic':'Quest'}`:'')}
@@ -317,12 +327,13 @@
       if(a.city)rows.push(['City',a.city]);
       if(a.talent)rows.push(['Secret talent',a.talent]);
       if(isRomantic()){
-        rows.push(['Preferred type',[a.height,a.build,a.type].filter(Boolean).join(' · ')]);
-        rows.push(['Vibe',a.vibe]);
-        rows.push(['Difficulty',a.difficulty]);
-        if(a.scene)rows.push(['Scene',a.scene]);
+        rows.push(['Type',a.type]);
+        rows.push(['Perfect evening',a.vibe]);
+        rows.push(['Into',[a.height,a.build,a.match].filter(Boolean).join(' · ')]);
+        if(allInterests().length)rows.push(['Interests',allInterests().join(', ')]);
+        if(a.current)rows.push(['Current quest',a.current]);
+        if(a.scene)rows.push(['Where it starts',a.scene]);
       } else {
-        rows.push(['Stats',statsLine()]);
         if(allInterests().length)rows.push(['Interests',allInterests().join(', ')]);
         if(a.trick)rows.push(['Trick',a.trick]);
         if(a.moral)rows.push(['Values',a.moral]);
@@ -333,7 +344,7 @@
       return rows;
     }
     function messageText(){
-      const lines=['NOT YOUR BUSINESS. — character sheet',...summaryRows().map(([k,v])=>`${k}: ${v}`)];
+      const lines=['Hey, ich hab deinen QR-Code gescannt.','',...summaryRows().map(([k,v])=>`${k}: ${v}`)];
       if(isRomantic()&&state.appealed)lines.push('Appeal: accepted');
       return lines.join('\n');
     }
@@ -344,10 +355,10 @@
       trackView('final',{path:state.answers.path,identity:state.answers.identity});completeSurvey();
       const rows=`<div class="result-card">${summaryRows().map(([k,v])=>`<div class="result-row"><span>${escapeHtml(k)}</span><span>${escapeHtml(v)}</span></div>`).join('')}</div>`;
       if(isRomantic()){
-        app.innerHTML=`<section class="panel final"><h1>Let's see where this goes<span class="period">.</span></h1>${rows}<a class="whatsapp" id="join" href="${whatsappUrl()}">Let's find out</a><p class="micro">Deine Antworten stehen schon in der Nachricht. Vor dem Senden kannst du alles ändern.</p></section>`;
+        app.innerHTML=`<section class="panel final"><h1>Let's see where this goes<span class="period">.</span></h1>${rows}<a class="whatsapp" id="join" href="${whatsappUrl()}">Let's find out</a><p class="micro">Öffnet WhatsApp. Du entscheidest, was du schickst – vor dem Senden kannst du alles ändern.</p></section>`;
         document.getElementById('join').addEventListener('click',()=>track('romantic_contact_clicked',{path:'romantic',scene:state.answers.scene}));
       }else{
-        app.innerHTML=`<section class="panel final"><p class="eyebrow">CHARACTER ACCEPTED.</p><h1>Character complete<span class="period">.</span></h1><p class="lede">Geschafft.</p>${rows}<a class="whatsapp" id="join" href="${whatsappUrl()}">Erzähl mir von deiner Quest</a><p class="micro">Deine Antworten stehen schon in der Nachricht. Vor dem Senden kannst du alles ändern.</p></section>`;
+        app.innerHTML=`<section class="panel final"><p class="eyebrow">CHARACTER ACCEPTED.</p><h1>Character complete<span class="period">.</span></h1><p class="lede">Geschafft.</p>${rows}<a class="whatsapp" id="join" href="${whatsappUrl()}">Erzähl mir von deiner Quest</a><p class="micro">Öffnet WhatsApp. Du entscheidest, was du schickst – vor dem Senden kannst du alles ändern.</p></section>`;
         document.getElementById('join').addEventListener('click',()=>track('join_party_clicked',{path:'quest',quest:state.answers.quest}));
       }
     }
@@ -368,6 +379,7 @@
       else if(state.screen==='trick')renderTrick();
       else if(state.screen==='values')renderValues();
       else if(state.screen==='romantic-profile')renderRomanticProfile();
+      else if(state.screen==='match')renderMatch();
       else if(state.screen==='difficulty')renderDifficulty();
       else if(state.screen==='romantic-scene')renderRomanticScene();
       else if(state.screen==='denied')renderDenied();
@@ -378,7 +390,7 @@
       else if(state.screen==='final')renderFinal();
     }
 
-    back.addEventListener('click',()=>{if(!state.history.length)return;const prev=state.history.pop();track('back_clicked',{from:state.screen,to:prev});state.screen=prev;analytics.lastView='';sfx('select');render()});
+    back.addEventListener('click',()=>{if(!state.history.length)return;let prev=state.history.pop();while(['denied','exception'].includes(prev)&&state.history.length){state.appealed=false;prev=state.history.pop()}track('back_clicked',{from:state.screen,to:prev});state.screen=prev;analytics.lastView='';sfx('select');render()});
     sfxEl.addEventListener('click',()=>{state.sound=!state.sound;if(state.sound)sfx('unlock');track('sfx_toggled',{enabled:state.sound});updateHud()});
 
     track('game_started',{referrer:document.referrer?(()=>{try{return new URL(document.referrer).hostname}catch{return 'unknown'}})():'direct'});
