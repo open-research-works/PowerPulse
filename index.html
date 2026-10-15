@@ -42,7 +42,7 @@
       font-size:13px;letter-spacing:.01em;transition:color .16s ease,opacity .16s ease;
     }
     .back{opacity:0;pointer-events:none}.back.visible{opacity:1;pointer-events:auto}.back:hover,.back:focus-visible,.sfx:hover,.sfx:focus-visible{color:var(--text);outline:none}
-    .hud{display:flex;align-items:center;gap:14px}.step{color:#5d5d58;font-size:11px;letter-spacing:.14em;font-variant-numeric:tabular-nums}.sfx{min-width:34px;text-align:right}.sfx.off{color:#44443f;text-decoration:line-through}
+    .hud{display:flex;align-items:center;gap:14px}.step{color:#5d5d58;font-size:11px;letter-spacing:.14em;font-variant-numeric:tabular-nums}.sfx{min-width:34px;text-align:right}.langs{display:flex;gap:6px}.lang{appearance:none;border:0;background:transparent;padding:6px 2px;cursor:pointer;opacity:.32;transition:opacity .16s ease;line-height:0}.lang svg{width:22px;height:13px;border-radius:2px;display:block}.lang.active{opacity:1}.lang:hover,.lang:focus-visible{opacity:.8;outline:none}.lang.active:hover{opacity:1}.sfx.off{color:#44443f;text-decoration:line-through}
     main{display:flex;align-items:center;padding:28px 0 48px;min-width:0}
     .panel{width:100%;animation:enter .26s cubic-bezier(.2,.75,.25,1) both}
     @keyframes enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -61,7 +61,7 @@
     }
     .choice:hover,.choice:focus-visible{border-color:#565650;background:#10100f;outline:none}.choice:active{transform:scale(.992)}
     .choice.selected{border-color:var(--accent);background:#0b1209;box-shadow:0 0 0 1px rgba(57,255,20,.05) inset}
-    .choice .arrow{color:#575751;font-size:17px}.choice-sub{display:block;margin-top:4px;color:var(--muted);font-size:13.5px;line-height:1.35}.choice.selected .arrow{color:var(--accent)}
+    .choice .arrow{color:#575751;font-size:17px}.field.own{margin-top:12px}.choice-sub{display:block;margin-top:4px;color:var(--muted);font-size:13.5px;line-height:1.35}.choice.selected .arrow{color:var(--accent)}
     .choice.multi .arrow{font-size:15px}.choice.multi.selected .arrow::before{content:'✓'}.choice.multi:not(.selected) .arrow::before{content:'+'}
     .choice.multi .arrow{font-size:16px}.choice.multi .arrow{color:#6d6d66}
     .choice.multi.selected .arrow{color:var(--accent)}
@@ -103,7 +103,7 @@
   <div class="shell">
     <header class="topbar">
       <button class="back" id="back" type="button" aria-label="Zurück">← Zurück</button>
-      <div class="hud"><span class="step" id="step"></span><button class="sfx" id="sfx" type="button" aria-label="Toggle sound">SFX</button></div>
+      <div class="hud"><span class="step" id="step"></span><span class="langs"><button class="lang" type="button" data-lang="de" aria-label="Deutsch"><svg viewBox="0 0 5 3" aria-hidden="true"><rect width="5" height="1" y="0" fill="#000"/><rect width="5" height="1" y="1" fill="#dd0000"/><rect width="5" height="1" y="2" fill="#ffce00"/></svg></button><button class="lang" type="button" data-lang="en" aria-label="English"><svg viewBox="0 0 60 30" aria-hidden="true"><clipPath id="ukc"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#ukc)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg></button></span><button class="sfx" id="sfx" type="button" aria-label="Toggle sound">SFX</button></div>
     </header>
     <main id="app" aria-live="polite"></main>
     <footer aria-hidden="true"></footer>
@@ -118,7 +118,8 @@
     const sfxEl=document.getElementById('sfx');
 
     const initialStats=()=>({Brains:0,Courage:0,Charm:0,Stamina:0,Chaos:0});
-    const initialAnswers=()=>({identity:'',path:'',age:'',city:'',stats:initialStats(),interests:[],custom:'',talent:'',match:'',trick:'',moral:'',height:'',build:'',type:'',vibe:'',difficulty:'',scene:'',quest:'',current:'',side:''});
+    const initialOwn=()=>({type:'',vibe:'',match:'',scene:'',quest:''});
+    const initialAnswers=()=>({identity:'',path:'',age:'',city:'',stats:initialStats(),interests:[],custom:'',talent:'',match:[],trick:'',moral:'',height:'',build:'',type:[],vibe:[],difficulty:'',scene:[],quest:[],current:'',side:'',formation:'',own:initialOwn()});
     const state={screen:'identity',history:[],sound:true,appealed:false,interestsFull:false,answers:initialAnswers()};
 
     const analytics={lastView:''};
@@ -140,24 +141,14 @@
       else if(kind==='success'){tone(880,.08,'sine',.02);tone(1320,.16,'sine',.018,.085);navigator.vibrate?.(18)}
     }
 
-    const INTERESTS=['Coding','Sports','Gaming','Creative','Art','Music','Outdoors','Business','Building stuff','Aura farming','Dancing queen','Comedic genius'];
-    const TRICKS=['Ich lege eine falsche Fährte.','Ich biete ihnen einen Handel an, der keiner ist.','Wir warten bis zur Nacht und schleichen vorbei.','Ich bluffe: Hinter uns kommt eine ganze Armee.'];
-    const MORALS=['Ohne zu zögern.','Ich stelle mich vor die, die mir wichtig sind.','Ja, auch wenn ich allein dastehe.','Für eine Nebenquest sterbe ich nicht.'];
-    const HEIGHTS=['Hobbit · ~160 cm','~175 cm','182+ cm'];
-    const BUILDS=['Muscle','Lean','Dad bod'];
-    const MATCHES=['Abenteurer','Nerd mit Herz','Ruhepol','Macher','Kreativkopf','Charmeur','Überrasch mich'];
-    const TYPES=['Hard to get','Wild Cat','Kreativ','Freigeist','Ruhepol'];
-    const VIBES=['Netflix & chill','Cinema','Anime night','Horror night','So bad it\'s good','Game night','Live music','Cooking together'];
     const DIFFICULTIES=['Nur schauen, nicht anfassen.','Noch geheim.','You don’t know what you’re in for.','Fantasyroman mit Romantik.','Soap Opera.'];
-    const ROMANTIC_SCENES=[
-      ['Bei einem Kaffee.','Vor dem ersten Schluck wird nichts entschieden.'],
-      ['Auf einer Nachtfahrt.','Viben, quatschen und die Szenerie.'],
-      ['Auf einer Wanderung.','Offiziell zum Gipfel. Inoffiziell zur Hütte mit Kuchen.'],
-      ['Auf dem Flohmarkt.','Niemand braucht eine Lampe in Form einer Ente. Trotzdem.'],
-      ['Bei einem Plan, der schiefgeht.','Genau so war es geplant.'],
-      ['Spontan.','Ort und Uhrzeit klärt das Schicksal. Oder WhatsApp.']
-    ];
-    const QUESTS=['Building something stupid.','Coding something useful.','In the middle of a gym challenge.','On a questionable hike.','On a road trip.','Making money.','Learning a ridiculous skill.'];
+    const LISTS={"de": {"interests": ["Coding", "Sport", "Gaming", "Kreativ", "Kunst", "Musik", "Draußen sein", "Business", "Dinge bauen", "Aura farming", "Dancing queen", "Comedic genius"], "tricks": ["Ich lege eine falsche Fährte.", "Ich biete ihnen einen Handel an, der keiner ist.", "Wir warten bis zur Nacht und schleichen vorbei.", "Ich bluffe: Hinter uns kommt eine ganze Armee."], "morals": ["Ohne zu zögern.", "Ich stelle mich vor die, die mir wichtig sind.", "Ja, auch wenn ich allein dastehe.", "Für eine Nebenquest sterbe ich nicht."], "heights": ["Hobbit · ~160 cm", "~175 cm", "182+ cm"], "builds": ["Muskulös", "Schlank", "Dad bod"], "matches": ["Abenteurer", "Nerd mit Herz", "Ruhepol", "Macher", "Kreativkopf", "Charmeur", "Überrasch mich"], "types": ["Hard to get", "Wild Cat", "Kreativ", "Freigeist", "Ruhepol"], "vibes": ["Netflix & chill", "Kino", "Anime-Abend", "Horror-Abend", "So schlecht, dass es gut ist", "Spieleabend", "Live-Musik", "Zusammen kochen"], "scenes": [["Bei einem Kaffee.", "Vor dem ersten Schluck wird nichts entschieden."], ["Auf einer Nachtfahrt.", "Viben, quatschen und die Szenerie."], ["Auf einer Wanderung.", "Offiziell zum Gipfel. Inoffiziell zur Hütte mit Kuchen."], ["Auf dem Flohmarkt.", "Niemand braucht eine Lampe in Form einer Ente. Trotzdem."], ["Bei einem Plan, der schiefgeht.", "Genau so war es geplant."], ["Spontan.", "Ort und Uhrzeit klärt das Schicksal. Oder WhatsApp."]], "quests": ["Ich baue etwas Verrücktes.", "Ich programmiere etwas Nützliches.", "Mitten in einer Fitness-Challenge.", "Auf einer fragwürdigen Wanderung.", "Auf einem Roadtrip.", "Beim Geldverdienen.", "Ich lerne eine absurde Fähigkeit."]}, "en": {"interests": ["Coding", "Sports", "Gaming", "Creative", "Art", "Music", "Outdoors", "Business", "Building stuff", "Aura farming", "Dancing queen", "Comedic genius"], "tricks": ["I lay a false trail.", "I offer them a deal that isn't one.", "We wait for nightfall and sneak past.", "I bluff: there's a whole army behind us."], "morals": ["Without hesitation.", "I stand in front of the people who matter to me.", "Yes, even if I stand alone.", "I'm not dying for a side quest."], "heights": ["Hobbit · ~160 cm", "~175 cm", "182+ cm"], "builds": ["Muscle", "Lean", "Dad bod"], "matches": ["Adventurer", "Nerd with a heart", "Calm soul", "Doer", "Creative mind", "Charmer", "Surprise me"], "types": ["Hard to get", "Wild cat", "Creative", "Free spirit", "Calm soul"], "vibes": ["Netflix & chill", "Cinema", "Anime night", "Horror night", "So bad it's good", "Game night", "Live music", "Cooking together"], "scenes": [["Over coffee.", "Nothing gets decided before the first sip."], ["On a night drive.", "Vibing, talking and the scenery."], ["On a hike.", "Officially to the summit. Unofficially to the hut with cake."], ["At the flea market.", "Nobody needs a duck-shaped lamp. Still."], ["On a plan that goes wrong.", "Exactly as planned."], ["Spontaneously.", "Fate decides the place and time. Or WhatsApp."]], "quests": ["Building something stupid.", "Coding something useful.", "In the middle of a gym challenge.", "On a questionable hike.", "On a road trip.", "Making money.", "Learning a ridiculous skill."]}};
+    const TXT={"de": {"back": "← Zurück", "next": "Weiter", "she": "Sie", "he": "Er", "whoH": "Wer bist du", "whoLede": "Charakterprüfung läuft.<br>Quest gesperrt.", "whoHint": "Am Ende kannst du mir auf WhatsApp schreiben – nur wenn du willst.", "pathH": "Wähle deinen Weg, Reisende", "pathRom": "Heimlich romantisch.", "pathQuest": "Ich bin hier, um auf eine Quest zu gehen.", "aboutEye": "ÜBER DICH.", "aboutH": "Alter & Stadt", "age": "Alter", "city": "Stadt", "agePh": "z. B. 28", "cityPh": "z. B. Berlin", "talentEye": "DEIN TALENT", "talentH": "Geheimes Talent", "talentPh": "Etwas, das man dir nicht ansieht …", "intEye": "DEINE INTERESSEN", "intH": "Deine Talente", "intFull": "Maximal 4 aus der Liste.", "intHint": "Bis zu 4, dazu eins selbst geschrieben.", "intOwn": "Oder selbst schreiben", "intOwnPh": "Etwas anderes …", "chapter": "KAPITEL 1.", "storyH": "Eine Gruppe sucht noch jemanden", "story1": "Drei Leute, ein Plan und eine Karte mit einem Kreuz darauf. Es fehlt noch eine vierte Person. Du sagst zu.", "story2": "Am zweiten Tag stehen Fremde auf dem Pass und versperren euch den Weg.", "trickLede": "Die Fremden wollen eure Vorräte. Sie sind zu sechst, ihr zu viert.", "trickH": "Wie würdest du sie überlisten", "valEye": "DEINE WERTE WERDEN AUF DIE PROBE GESTELLT.", "valLede": "Es hat geklappt. Am Abend sitzt ihr am Feuer, und jemand aus der Gruppe fragt dich:", "valH": "Würdest du für das kämpfen, woran du glaubst", "ownLabel": "Oder eigene Antwort", "ownPh": "Eigene Antwort …", "ownListPh": "Was ganz anderes …", "ownSinglePh": "Ich würde …", "many": "Mehrere möglich.", "typeEye": "DEIN TYP.", "typeH": "Wie bist du so", "typeQ": "Welcher Typ bist du?", "vibeQ": "Perfekter Abend?", "matchEye": "DEIN MATCH.", "matchH": "Und wer ist dein Typ", "heightQ": "Größe?", "buildQ": "Statur?", "persQ": "Persönlichkeit? Mehrere möglich.", "sceneEye": "LETZTE SZENE.", "sceneH": "Wo fängt es an", "deniedEye": "ENTSCHEIDUNG.", "deniedH": "Abgelehnt", "deniedLede": "Du kannst Einspruch einlegen.", "appeal": "Einspruch einlegen", "excEye": "EINSPRUCH ANGENOMMEN.", "excH": "Na gut", "excLede": "Wir machen eine Ausnahme.", "questEye": "DEINE QUEST.", "questH": "Wo beginnt das Abenteuer", "curEye": "FAST GESCHAFFT.", "curH": "Auf welcher Quest bist du gerade", "curPh": "Ein Projekt, ein Ziel, etwas, das du lernst …", "sideEye": "NEBENBEI.", "formEye": "LETZTE FRAGE.", "formH": "Wie sollte so eine Quest-Formation heißen", "formPh": "Ein Name für die Gruppe …", "rFormation": "Name der Formation", "sideH": "Und deine Sidequest", "sidePh": "Was nebenbei noch läuft …", "romFinalH": "Mal sehen, wohin das führt", "romFinalBtn": "Finden wir's raus", "questFinalEye": "CHARAKTER ANGENOMMEN.", "questFinalH": "Charakter fertig", "questFinalLede": "Geschafft.", "questFinalBtn": "Absenden", "micro": "Öffnet WhatsApp. Du entscheidest, was du schickst – vor dem Senden kannst du alles ändern.", "msgHello": "Hey, ich hab deinen QR-Code gescannt.", "msgAppeal": "Einspruch: angenommen", "rRom": "Heimlich romantisch", "rQuest": "Quest", "rTraveler": "Figur", "rAge": "Alter", "rCity": "Stadt", "rTalent": "Geheimes Talent", "rType": "Typ", "rEvening": "Perfekter Abend", "rInto": "Steht auf", "rInterests": "Interessen", "rCurrent": "Aktuelle Quest", "rStart": "Wo es anfängt", "rTrick": "Trick", "rValues": "Werte", "rAdventure": "Abenteuer", "rSide": "Sidequest"}, "en": {"back": "← Back", "next": "Next", "she": "She", "he": "He", "whoH": "Who are you", "whoLede": "Character assessment in progress.<br>Quest locked.", "whoHint": "At the end you can text me on WhatsApp – only if you want to.", "pathH": "Choose your path, traveler", "pathRom": "Secretly romantic.", "pathQuest": "I am here to embark on a quest.", "aboutEye": "ABOUT YOU.", "aboutH": "Age & city", "age": "Age", "city": "City", "agePh": "e.g. 28", "cityPh": "e.g. Berlin", "talentEye": "YOUR STAT", "talentH": "Secret talent", "talentPh": "Something no one would guess …", "intEye": "CHOOSE YOUR INTERESTS", "intH": "Your talents", "intFull": "Max. 4 from the list.", "intHint": "Up to 4, plus one of your own.", "intOwn": "Or write your own", "intOwnPh": "Something else …", "chapter": "CHAPTER 1.", "storyH": "A group is looking for one more", "story1": "Three people, a plan and a map with an X on it. They need a fourth. You say yes.", "story2": "On day two, strangers are standing on the pass, blocking your way.", "trickLede": "The strangers want your supplies. There are six of them and four of you.", "trickH": "How would you outsmart them", "valEye": "YOUR VALUES ARE PUT TO THE TEST.", "valLede": "It worked. That evening you sit by the fire, and someone from the group asks you:", "valH": "Would you fight for what you believe in", "ownLabel": "Or your own answer", "ownPh": "Your own answer …", "ownListPh": "Something else entirely …", "ownSinglePh": "I would …", "many": "Pick as many as you like.", "typeEye": "YOUR TYPE.", "typeH": "What are you like", "typeQ": "Which type are you?", "vibeQ": "Perfect evening?", "matchEye": "YOUR MATCH.", "matchH": "And who's your type", "heightQ": "Height?", "buildQ": "Build?", "persQ": "Personality? Pick as many as you like.", "sceneEye": "LAST SCENE.", "sceneH": "Where does it start", "deniedEye": "DECISION.", "deniedH": "Denied", "deniedLede": "You may appeal this decision.", "appeal": "Appeal decision", "excEye": "APPEAL ACCEPTED.", "excH": "Fine", "excLede": "We'll make an exception.", "questEye": "PICK YOUR QUEST.", "questH": "Where does the adventure begin", "curEye": "ALMOST DONE.", "curH": "What quest are you on right now", "curPh": "A project, a goal, something you're learning …", "sideEye": "ON THE SIDE.", "formEye": "LAST QUESTION.", "formH": "What should a quest party like this be called", "formPh": "A name for the party …", "rFormation": "Party name", "sideH": "And your side quest", "sidePh": "What else is going on …", "romFinalH": "Let's see where this goes", "romFinalBtn": "Let's find out", "questFinalEye": "CHARACTER ACCEPTED.", "questFinalH": "Character complete", "questFinalLede": "Done.", "questFinalBtn": "Send", "micro": "Opens WhatsApp. You decide what to send – you can change everything before sending.", "msgHello": "Hey, I scanned your QR code.", "msgAppeal": "Appeal: accepted", "rRom": "Secretly romantic", "rQuest": "Quest", "rTraveler": "Traveler", "rAge": "Age", "rCity": "City", "rTalent": "Secret talent", "rType": "Type", "rEvening": "Perfect evening", "rInto": "Into", "rInterests": "Interests", "rCurrent": "Current quest", "rStart": "Where it starts", "rTrick": "Trick", "rValues": "Values", "rAdventure": "Adventure", "rSide": "Side quest"}};
+    let LANG=(()=>{try{const s=localStorage.getItem('nyb-lang');if(s==='de'||s==='en')return s}catch{}return String(navigator.language||'de').toLowerCase().startsWith('de')?'de':'en'})();
+    const L=()=>TXT[LANG];const LI=()=>LISTS[LANG];
+    function mainText(it){return Array.isArray(it)?it[0]:it}
+    function translateAnswers(from,to){const a=state.answers;const map=(key,v)=>{const i=LISTS[from][key].map(mainText).indexOf(v);return i>=0?mainText(LISTS[to][key][i]):v};a.interests=a.interests.map(v=>map('interests',v));[['type','types'],['vibe','vibes'],['match','matches'],['scene','scenes'],['quest','quests']].forEach(([k,l])=>{a[k]=a[k].map(v=>map(l,v))});[['trick','tricks'],['moral','morals'],['height','heights'],['build','builds']].forEach(([k,l])=>{if(a[k])a[k]=map(l,a[k])})}
+    function setLang(lang){if(lang===LANG)return;translateAnswers(LANG,lang);LANG=lang;try{localStorage.setItem('nyb-lang',lang)}catch{}track('language_switched',{lang});analytics.lastView='';render()}
     const CLASS_NAMES={'Brains+Chaos':'Mad scientist build.','Charm+Chaos':'Menace build.','Courage+Stamina':'Main character build.','Brains+Charm':'Final boss build.'};
 
     function escapeHtml(value){return String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;")}
@@ -165,18 +156,19 @@
     function statTotal(){return Object.values(state.answers.stats).reduce((a,b)=>a+b,0)}
     function isRomantic(){return state.answers.identity==='She'&&state.answers.path==='romantic'}
     function isQuest(){return state.answers.identity==='He'||state.answers.path==='quest'}
-    function isPreferred(){return state.answers.height==='~175 cm'&&(state.answers.build==='Muscle'||state.answers.build==='Lean')}
+    function isPreferred(){const a=state.answers,h=LI().heights,b=LI().builds;return a.height===h[1]&&(a.build===b[0]||a.build===b[1])}
 
     function statsLine(){return Object.entries(state.answers.stats).filter(([,v])=>v>0).map(([k,v])=>`${k} ${v}`).join(' · ')}
     function className(){const maxed=Object.entries(state.answers.stats).filter(([,v])=>v===5).map(([k])=>k);return maxed.length===2?(CLASS_NAMES[maxed.join('+')]||''):''}
 
     function expectedScreens(){
       if(state.answers.identity==='She'&&state.answers.path==='romantic')return ['identity','path','about','romantic-profile','match','interests','talent','current','romantic-scene','final'];
-      if(state.answers.identity==='She'&&state.answers.path==='quest')return ['identity','path','about','interests','talent','story','trick','values','quest','current','side','final'];
-      if(state.answers.identity==='He')return ['identity','about','interests','talent','story','trick','values','quest','current','side','final'];
+      if(state.answers.identity==='She'&&state.answers.path==='quest')return ['identity','path','about','interests','talent','story','trick','values','quest','current','side','formation','final'];
+      if(state.answers.identity==='He')return ['identity','about','interests','talent','story','trick','values','quest','current','side','formation','final'];
       return ['identity'];
     }
     function updateHud(){
+      back.textContent=L().back;document.documentElement.lang=LANG;document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('active',b.dataset.lang===LANG));
       back.classList.toggle('visible',state.history.length>0&& !['denied','exception'].includes(state.screen));
       const flow=expectedScreens();const idx=flow.indexOf(state.screen);
       stepEl.textContent=flow.length>1&&idx>=0?`${String(idx+1).padStart(2,'0')} / ${String(flow.length).padStart(2,'0')}`:'';
@@ -186,24 +178,35 @@
     function resetForIdentity(){state.answers=initialAnswers();state.appealed=false;state.interestsFull=false}
     function chooseSingle(key,value,next,event){state.answers[key]=value;track('answer_selected',{question:key,choice:value,path:state.answers.path||'unset'});if(event)track(event,{choice:value,path:state.answers.path||'unset'});sfx('select');setTimeout(()=>go(next,{sound:'next'}),105)}
 
+    function picks(key){const a=state.answers;return [...a[key],...(a.own[key]?[a.own[key]]:[])]}
+    function pickText(key){return picks(key).map(s=>s.replace(/\.$/,'')).join(', ')}
+    function ownField(key,placeholder=L().ownPh){return `<input class="field own" data-own="${key}" maxlength="60" autocomplete="off" enterkeyhint="done" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(state.answers.own[key])}" />`}
+    function multiChips(label,key,values,first){const a=state.answers;return `<div><p class="section-label"${first?' style="margin-top:0"':''}>${label}</p><div class="chips">${values.map(v=>`<button class="chip${a[key].includes(v)?' selected':''}" type="button" data-multi="${key}" data-value="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('')}</div>${ownField(key)}</div>`}
+    function multiList(key,items){const a=state.answers;return `<div class="options">${items.map(it=>{const [v,sub]=Array.isArray(it)?it:[it,''];return `<button class="choice${a[key].includes(v)?' selected':''}" type="button" data-multi="${key}" data-value="${escapeHtml(v)}"><span>${escapeHtml(v)}${sub?`<small class="choice-sub">${escapeHtml(sub)}</small>`:''}</span><span class="arrow">↗</span></button>`}).join('')}</div><p class="section-label">${L().ownLabel}</p>${ownField(key,L().ownListPh)}`}
+    function bindMulti(onChange){
+      app.querySelectorAll('[data-multi]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.multi,v=b.dataset.value,l=state.answers[k];const i=l.indexOf(v);if(i>=0)l.splice(i,1);else l.push(v);b.classList.toggle('selected',i<0);track('answer_toggled',{question:k,choice:v,selected:i<0});sfx('select');onChange()}));
+      app.querySelectorAll('[data-own]').forEach(inp=>{inp.addEventListener('input',()=>{state.answers.own[inp.dataset.own]=compact(inp.value);onChange()});inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur()}})});
+    }
+    function ownSingle(key,list,next,event){const a=state.answers;const own=a[key]&&!list.includes(a[key])?a[key]:'';return `<p class="section-label">${L().ownLabel}</p><input class="field own" id="own-single" maxlength="80" autocomplete="off" enterkeyhint="done" placeholder="${L().ownSinglePh}" value="${escapeHtml(own)}" /><button class="next" id="own-next" type="button" data-key="${key}" data-next="${next}" data-event="${event}" ${own?'':'disabled'}>${L().next}</button>`}
+    function bindOwnSingle(){const inp=document.getElementById('own-single');const btn=document.getElementById('own-next');if(!inp)return;const done=()=>{const v=compact(inp.value);if(!v)return;state.answers[btn.dataset.key]=v;track(btn.dataset.event,{choice:v,own:true,path:state.answers.path});go(btn.dataset.next)};inp.addEventListener('input',()=>{btn.disabled=!compact(inp.value)});inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();done()}});btn.addEventListener('click',done)}
     function btnChoice(label,key,next,event=''){const selected=state.answers[key]===label;return `<button class="choice${selected?' selected':''}" type="button" data-single-key="${key}" data-value="${escapeHtml(label)}" data-next="${next}" data-event="${event}"><span>${escapeHtml(label)}</span><span class="arrow">↗</span></button>`}
 
     function renderIdentity(){
       trackView('identity');
-      app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h1>Who are you<span class="period">?</span></h1><p class="lede">Character assessment in progress.<br>Quest locked.</p><p class="hint">Am Ende kannst du mir auf WhatsApp schreiben – nur wenn du willst.</p><div class="options"><button class="choice" type="button" data-identity="She"><span>She</span><span class="arrow">↗</span></button><button class="choice" type="button" data-identity="He"><span>He</span><span class="arrow">↗</span></button></div></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h1>${L().whoH}<span class="period">?</span></h1><p class="lede">${L().whoLede}</p><p class="hint">${L().whoHint}</p><div class="options"><button class="choice" type="button" data-identity="She"><span>${L().she}</span><span class="arrow">↗</span></button><button class="choice" type="button" data-identity="He"><span>${L().he}</span><span class="arrow">↗</span></button></div></section>`;
       app.querySelectorAll('[data-identity]').forEach(b=>b.addEventListener('click',()=>{resetForIdentity();state.answers.identity=b.dataset.identity;track('gender_selected',{identity:b.dataset.identity});sfx('select');setTimeout(()=>{if(b.dataset.identity==='She')go('path');else{state.answers.path='quest';go('about')}},105)}));
     }
 
     function renderPath(){
       trackView('path');
-      app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h2 class="question">Choose your path, traveler<span class="period">.</span></h2><div class="options"><button class="choice" type="button" data-path="romantic"><span>Secretly romantic.</span><span class="arrow">↗</span></button><button class="choice" type="button" data-path="quest"><span>I am here to embark on a quest.</span><span class="arrow">↗</span></button></div></section>`;
-      app.querySelectorAll('[data-path]').forEach(b=>b.addEventListener('click',()=>{const a=state.answers;if(a.path&&a.path!==b.dataset.path){a.trick='';a.moral='';a.height='';a.build='';a.type='';a.vibe='';a.difficulty='';a.scene='';a.quest='';state.appealed=false}a.path=b.dataset.path;track('path_selected',{path:b.dataset.path});sfx('select');setTimeout(()=>go('about'),105)}));
+      app.innerHTML=`<section class="panel"><p class="eyebrow">NOT YOUR BUSINESS.</p><h2 class="question">${L().pathH}<span class="period">.</span></h2><div class="options"><button class="choice" type="button" data-path="romantic"><span>${L().pathRom}</span><span class="arrow">↗</span></button><button class="choice" type="button" data-path="quest"><span>${L().pathQuest}</span><span class="arrow">↗</span></button></div></section>`;
+      app.querySelectorAll('[data-path]').forEach(b=>b.addEventListener('click',()=>{const a=state.answers;if(a.path&&a.path!==b.dataset.path){Object.assign(a,{trick:'',moral:'',height:'',build:'',type:[],vibe:[],match:[],difficulty:'',scene:[],quest:[],own:initialOwn()});state.appealed=false}a.path=b.dataset.path;track('path_selected',{path:b.dataset.path});sfx('select');setTimeout(()=>go('about'),105)}));
     }
 
     function renderAbout(){
       trackView('about',{path:state.answers.path,identity:state.answers.identity});
       const a=state.answers;
-      app.innerHTML=`<section class="panel"><p class="eyebrow">ABOUT YOU.</p><h2 class="question">Alter & Stadt<span class="period">.</span></h2><div class="split"><div><p class="section-label" style="margin-top:0">Alter</p><input class="field" id="age" type="number" min="18" max="99" inputmode="numeric" autocomplete="bday" enterkeyhint="next" placeholder="z. B. 28" value="${escapeHtml(a.age)}" /></div><div><p class="section-label">Stadt</p><input class="field" id="city" maxlength="80" autocomplete="address-level2" enterkeyhint="done" placeholder="z. B. Berlin" value="${escapeHtml(a.city)}" /></div></div><button class="next" id="about-next" type="button">Weiter</button></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">${L().aboutEye}</p><h2 class="question">${L().aboutH}<span class="period">.</span></h2><div class="split"><div><p class="section-label" style="margin-top:0">${L().age}</p><input class="field" id="age" type="number" min="18" max="99" inputmode="numeric" autocomplete="bday" enterkeyhint="next" placeholder="${L().agePh}" value="${escapeHtml(a.age)}" /></div><div><p class="section-label">${L().city}</p><input class="field" id="city" maxlength="80" autocomplete="address-level2" enterkeyhint="done" placeholder="${L().cityPh}" value="${escapeHtml(a.city)}" /></div></div><button class="next" id="about-next" type="button">${L().next}</button></section>`;
       const age=document.getElementById('age');const city=document.getElementById('city');const next=document.getElementById('about-next');
       const valid=()=>{const n=Number(age.value);return Number.isInteger(n)&&n>=18&&n<=99&&!!compact(city.value)};
       const sync=()=>{next.disabled=!valid()};
@@ -215,10 +218,10 @@
       trackView('talent',{path:state.answers.path});
       const required=true;
       const hasTalent=!!compact(state.answers.talent);
-      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR STAT</p><h2 class="question">Secret talent<span class="period">?</span></h2><input class="field" id="talent" maxlength="120" autocomplete="off" enterkeyhint="next" placeholder="Etwas, das man dir nicht ansieht …" value="${escapeHtml(state.answers.talent)}" /><p class="counter" id="talent-count">${state.answers.talent.length} / 120</p><button class="next" id="talent-next" type="button" ${required&&!hasTalent?'disabled':''}>${hasTalent?'Weiter':required?'Weiter':'Weiter'}</button></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">${L().talentEye}</p><h2 class="question">${L().talentH}<span class="period">?</span></h2><input class="field" id="talent" maxlength="120" autocomplete="off" enterkeyhint="next" placeholder="${L().talentPh}" value="${escapeHtml(state.answers.talent)}" /><p class="counter" id="talent-count">${state.answers.talent.length} / 120</p><button class="next" id="talent-next" type="button" ${required&&!hasTalent?'disabled':''}>${L().next}</button></section>`;
       const input=document.getElementById('talent');const count=document.getElementById('talent-count');const next=document.getElementById('talent-next');
       const done=()=>{const value=compact(input.value);if(required&&!value)return;state.answers.talent=value;track('stat_text_completed',{talent:state.answers.talent,skipped:!value,length:state.answers.talent.length,path:state.answers.path});go(isRomantic()?'current':'story')};
-      input.addEventListener('input',()=>{const value=compact(input.value);count.textContent=`${input.value.length} / 120`;next.disabled=required&&!value;next.textContent=value?'Weiter':required?'Weiter':'Weiter'});
+      input.addEventListener('input',()=>{const value=compact(input.value);count.textContent=`${input.value.length} / 120`;next.disabled=required&&!value;next.textContent=L().next});
       input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();done()}});
       next.addEventListener('click',done);
     }
@@ -235,7 +238,7 @@
     function renderInterests(){
       trackView('interests',{path:state.answers.path});
       const a=state.answers;
-      app.innerHTML=`<section class="panel"><p class="eyebrow">CHOOSE YOUR INTERESTS</p><h2 class="question">Deine Talente<span class="period">.</span></h2><p class="hint${state.interestsFull?' danger':''}">${state.interestsFull?'Maximal 4 aus der Liste.':'Bis zu 4, dazu eins selbst geschrieben.'}</p><div class="chips" style="margin-top:22px">${INTERESTS.map(v=>`<button class="chip${a.interests.includes(v)?' selected':''}" type="button" data-interest="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('')}</div><p class="section-label">Oder selbst schreiben</p><input class="field" id="interest-custom" maxlength="40" autocomplete="off" enterkeyhint="done" placeholder="Etwas anderes …" value="${escapeHtml(a.custom)}" /><button class="next" id="interests-next" type="button" ${allInterests().length<1?'disabled':''}>Weiter</button></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">${L().intEye}</p><h2 class="question">${L().intH}<span class="period">.</span></h2><p class="hint${state.interestsFull?' danger':''}">${state.interestsFull?L().intFull:L().intHint}</p><div class="chips" style="margin-top:22px">${LI().interests.map(v=>`<button class="chip${a.interests.includes(v)?' selected':''}" type="button" data-interest="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join('')}</div><p class="section-label">${L().intOwn}</p><input class="field" id="interest-custom" maxlength="40" autocomplete="off" enterkeyhint="done" placeholder="${L().intOwnPh}" value="${escapeHtml(a.custom)}" /><button class="next" id="interests-next" type="button" ${allInterests().length<1?'disabled':''}>${L().next}</button></section>`;
       const custom=document.getElementById('interest-custom');const next=document.getElementById('interests-next');
       app.querySelectorAll('[data-interest]').forEach(b=>b.addEventListener('click',()=>{const v=b.dataset.interest;const list=a.interests;const i=list.indexOf(v);if(i>=0)list.splice(i,1);else if(list.length<4)list.push(v);else{state.interestsFull=true;sfx('fail');render();return}state.interestsFull=false;track('interest_toggled',{interest:v,selected:i<0,interests:list});sfx('select');render()}));
       custom.addEventListener('input',()=>{a.custom=compact(custom.value);next.disabled=allInterests().length<1});
@@ -245,38 +248,40 @@
 
     function renderStory(){
       trackView('story',{path:state.answers.path});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">KAPITEL 1.</p><h2 class="question">Eine Gruppe sucht noch jemanden<span class="period">.</span></h2><p class="lede">Drei Leute, ein Plan und eine Karte mit einem Kreuz darauf. Es fehlt noch eine vierte Person. Du sagst zu.</p><p class="lede">Am zweiten Tag stehen Fremde auf dem Pass und versperren euch den Weg.</p><button class="next" id="story-next" type="button">Weiter</button></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">${L().chapter}</p><h2 class="question">${L().storyH}<span class="period">.</span></h2><p class="lede">${L().story1}</p><p class="lede">${L().story2}</p><button class="next" id="story-next" type="button">${L().next}</button></section>`;
       document.getElementById('story-next').addEventListener('click',()=>go('trick'));
     }
 
     function renderTrick(){
       trackView('trick',{path:state.answers.path});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">KAPITEL 1.</p><p class="lede" style="margin:0 0 14px">Die Fremden wollen eure Vorräte. Sie sind zu sechst, ihr zu viert.</p><h2 class="question">Wie würdest du sie überlisten<span class="period">?</span></h2><div class="options">${TRICKS.map(v=>btnChoice(v,'trick','values','trick_selected')).join('')}</div></section>`;
-      bindSingleChoices();
+      app.innerHTML=`<section class="panel"><p class="eyebrow">${L().chapter}</p><p class="lede" style="margin:0 0 14px">${L().trickLede}</p><h2 class="question">${L().trickH}<span class="period">?</span></h2><div class="options">${LI().tricks.map(v=>btnChoice(v,'trick','values','trick_selected')).join('')}</div>${ownSingle('trick',LI().tricks,'values','trick_selected')}</section>`;
+      bindSingleChoices();bindOwnSingle();
     }
 
     function renderValues(){
       trackView('values',{path:state.answers.path});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">DEINE WERTE WERDEN AUF DIE PROBE GESTELLT.</p><p class="lede" style="margin:0 0 14px">Es hat geklappt. Am Abend sitzt ihr am Feuer, und jemand aus der Gruppe fragt dich:</p><h2 class="question">Würdest du für das kämpfen, woran du glaubst<span class="period">?</span></h2><div class="options">${MORALS.map(v=>btnChoice(v,'moral','quest','values_answered')).join('')}</div></section>`;
-      bindSingleChoices();
+      app.innerHTML=`<section class="panel"><p class="eyebrow">${L().valEye}</p><p class="lede" style="margin:0 0 14px">${L().valLede}</p><h2 class="question">${L().valH}<span class="period">?</span></h2><div class="options">${LI().morals.map(v=>btnChoice(v,'moral','quest','values_answered')).join('')}</div>${ownSingle('moral',LI().morals,'quest','values_answered')}</section>`;
+      bindSingleChoices();bindOwnSingle();
     }
 
     function renderRomanticProfile(){
       trackView('romantic_profile');
-      const a=state.answers;const ready=a.type&&a.vibe;
-      const group=(label,key,values,layout,first)=>`<div><p class="section-label"${first?' style="margin-top:0"':''}>${label}</p><div class="${layout}">${values.map(v=>`<button class="${layout==='chips'?'chip':'mini'}${a[key]===v?' selected':''}" type="button" data-profile="${key}" data-value="${escapeHtml(v)}">${escapeHtml(v).replace(' cm','&nbsp;cm')}</button>`).join('')}</div></div>`;
-      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR TYPE.</p><h2 class="question">Wie bist du so<span class="period">?</span></h2><div class="split">${group('Welcher Typ bist du?','type',TYPES,'chips',true)}${group('Perfekter Abend?','vibe',VIBES,'chips')}</div><button class="next" id="profile-next" type="button" ${ready?'':'disabled'}>Weiter</button></section>`;
-      app.querySelectorAll('[data-profile]').forEach(b=>b.addEventListener('click',()=>{state.answers[b.dataset.profile]=b.dataset.value;track('answer_selected',{question:b.dataset.profile,choice:b.dataset.value});sfx('select');render()}));
-      document.getElementById('profile-next')?.addEventListener('click',()=>{track('attraction_answered',{type:a.type,vibe:a.vibe});go('match')});
+      const ready=()=>picks('type').length&&picks('vibe').length;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">${L().typeEye}</p><h2 class="question">${L().typeH}<span class="period">?</span></h2><p class="hint">${L().many}</p><div class="split" style="margin-top:22px">${multiChips(L().typeQ,'type',LI().types,true)}${multiChips(L().vibeQ,'vibe',LI().vibes)}</div><button class="next" id="profile-next" type="button" ${ready()?'':'disabled'}>${L().next}</button></section>`;
+      const next=document.getElementById('profile-next');
+      bindMulti(()=>{next.disabled=!ready()});
+      next.addEventListener('click',()=>{track('attraction_answered',{type:picks('type'),vibe:picks('vibe')});go('match')});
     }
 
     function renderMatch(){
       trackView('match');
-      const a=state.answers;const ready=a.height&&a.build&&a.match;
-      const group=(label,key,values,layout,first)=>`<div><p class="section-label"${first?' style="margin-top:0"':''}>${label}</p><div class="${layout}">${values.map(v=>`<button class="${layout==='chips'?'chip':'mini'}${a[key]===v?' selected':''}" type="button" data-profile="${key}" data-value="${escapeHtml(v)}">${escapeHtml(v).replace(' cm','&nbsp;cm')}</button>`).join('')}</div></div>`;
-      app.innerHTML=`<section class="panel"><p class="eyebrow">YOUR MATCH.</p><h2 class="question">Und wer ist dein Typ<span class="period">?</span></h2><div class="split">${group('Größe?','height',HEIGHTS,'compact-options three',true)}${group('Statur?','build',BUILDS,'compact-options three')}${group('Persönlichkeit?','match',MATCHES,'chips')}</div><button class="next" id="match-next" type="button" ${ready?'':'disabled'}>Weiter</button></section>`;
-      app.querySelectorAll('[data-profile]').forEach(b=>b.addEventListener('click',()=>{state.answers[b.dataset.profile]=b.dataset.value;track('answer_selected',{question:b.dataset.profile,choice:b.dataset.value});sfx('select');render()}));
-      document.getElementById('match-next')?.addEventListener('click',()=>{track('match_answered',{height:a.height,build:a.build,match:a.match});go('interests')});
+      const a=state.answers;const ready=()=>a.height&&a.build&&picks('match').length;
+      const group=(label,key,values,first)=>`<div><p class="section-label"${first?' style="margin-top:0"':''}>${label}</p><div class="compact-options three">${values.map(v=>`<button class="mini${a[key]===v?' selected':''}" type="button" data-profile="${key}" data-value="${escapeHtml(v)}">${escapeHtml(v).replace(' cm','&nbsp;cm')}</button>`).join('')}</div></div>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">${L().matchEye}</p><h2 class="question">${L().matchH}<span class="period">?</span></h2><div class="split">${group(L().heightQ,'height',LI().heights,true)}${group(L().buildQ,'build',LI().builds)}${multiChips(L().persQ,'match',LI().matches)}</div><button class="next" id="match-next" type="button" ${ready()?'':'disabled'}>${L().next}</button></section>`;
+      const next=document.getElementById('match-next');
+      app.querySelectorAll('[data-profile]').forEach(b=>b.addEventListener('click',()=>{a[b.dataset.profile]=b.dataset.value;app.querySelectorAll(`[data-profile="${b.dataset.profile}"]`).forEach(x=>x.classList.toggle('selected',x===b));track('answer_selected',{question:b.dataset.profile,choice:b.dataset.value});sfx('select');next.disabled=!ready()}));
+      bindMulti(()=>{next.disabled=!ready()});
+      next.addEventListener('click',()=>{track('match_answered',{height:a.height,build:a.build,match:picks('match')});go('interests')});
     }
 
     function renderDifficulty(){
@@ -287,8 +292,10 @@
 
     function renderRomanticScene(){
       trackView('romantic_scene');
-      app.innerHTML=`<section class="panel"><p class="eyebrow">LAST SCENE.</p><h2 class="question">Wo fängt es an<span class="period">?</span></h2><div class="options">${ROMANTIC_SCENES.map(([v,sub])=>`<button class="choice${state.answers.scene===v?' selected':''}" type="button" data-romantic-scene="${escapeHtml(v)}"><span>${escapeHtml(v)}<small class="choice-sub">${escapeHtml(sub)}</small></span><span class="arrow">↗</span></button>`).join('')}</div></section>`;
-      app.querySelectorAll('[data-romantic-scene]').forEach(b=>b.addEventListener('click',()=>{state.answers.scene=b.dataset.romanticScene;track('romantic_scene_selected',{scene:b.dataset.romanticScene});sfx('select');setTimeout(()=>finishRomantic(),120)}));
+      app.innerHTML=`<section class="panel"><p class="eyebrow">${L().sceneEye}</p><h2 class="question">${L().sceneH}<span class="period">?</span></h2><p class="hint" style="margin-bottom:18px">${L().many}</p>${multiList('scene',LI().scenes)}<button class="next" id="scene-next" type="button" ${picks('scene').length?'':'disabled'}>${L().next}</button></section>`;
+      const next=document.getElementById('scene-next');
+      bindMulti(()=>{next.disabled=!picks('scene').length});
+      next.addEventListener('click',()=>{track('romantic_scene_selected',{scene:picks('scene')});finishRomantic()});
     }
 
     function finishRomantic(){
@@ -298,75 +305,79 @@
 
     function renderDenied(){
       trackView('denied',{path:'romantic'});
-      app.innerHTML=`<section class="panel final"><p class="eyebrow danger">DECISION.</p><h1>Denied<span class="period">.</span></h1><p class="lede">You may appeal this decision.</p><button class="appeal" id="appeal" type="button">Appeal decision</button></section>`;
+      app.innerHTML=`<section class="panel final"><p class="eyebrow danger">${L().deniedEye}</p><h1>${L().deniedH}<span class="period">.</span></h1><p class="lede">${L().deniedLede}</p><button class="appeal" id="appeal" type="button">${L().appeal}</button></section>`;
       document.getElementById('appeal').addEventListener('click',()=>{state.appealed=true;track('appeal_clicked',{path:'romantic'});sfx('unlock');go('exception',{sound:null})});
     }
 
     function renderException(){
       trackView('exception',{path:'romantic'});
-      app.innerHTML=`<section class="panel final"><p class="eyebrow">APPEAL ACCEPTED.</p><h1>Fine<span class="period">.</span></h1><p class="lede">We'll make an exception.</p><button class="next" id="exception-next" type="button">Weiter</button></section>`;
+      app.innerHTML=`<section class="panel final"><p class="eyebrow">${L().excEye}</p><h1>${L().excH}<span class="period">.</span></h1><p class="lede">${L().excLede}</p><button class="next" id="exception-next" type="button">${L().next}</button></section>`;
       document.getElementById('exception-next').addEventListener('click',()=>go('final',{sound:'success'}));
     }
 
     function renderQuest(){
       trackView('quest',{identity:state.answers.identity});
-      app.innerHTML=`<section class="panel"><p class="eyebrow">PICK YOUR QUEST.</p><h2 class="question">Wo beginnt das Abenteuer<span class="period">?</span></h2><div class="options">${QUESTS.map(v=>`<button class="choice${state.answers.quest===v?' selected':''}" type="button" data-quest="${escapeHtml(v)}"><span>${escapeHtml(v)}</span><span class="arrow">↗</span></button>`).join('')}</div></section>`;
-      app.querySelectorAll('[data-quest]').forEach(b=>b.addEventListener('click',()=>{state.answers.quest=b.dataset.quest;track('quest_selected',{quest:b.dataset.quest,path:'quest'});sfx('select');setTimeout(()=>go('current'),120)}));
+      app.innerHTML=`<section class="panel"><p class="eyebrow">${L().questEye}</p><h2 class="question">${L().questH}<span class="period">?</span></h2><p class="hint" style="margin-bottom:18px">${L().many}</p>${multiList('quest',LI().quests)}<button class="next" id="quest-next" type="button" ${picks('quest').length?'':'disabled'}>${L().next}</button></section>`;
+      const next=document.getElementById('quest-next');
+      bindMulti(()=>{next.disabled=!picks('quest').length});
+      next.addEventListener('click',()=>{track('quest_selected',{quest:picks('quest'),path:'quest'});go('current')});
     }
 
     function renderTextStep(key,eyebrow,title,placeholder,next,event){
       trackView(key,{path:state.answers.path});
       const a=state.answers;
-      app.innerHTML=`<section class="panel"><p class="eyebrow">${eyebrow}</p><h2 class="question">${title}<span class="period">?</span></h2><input class="field" id="text-step" maxlength="120" autocomplete="off" enterkeyhint="done" placeholder="${placeholder}" value="${escapeHtml(a[key])}" /><p class="counter" id="text-count">${a[key].length} / 120</p><button class="next" id="text-next" type="button" ${compact(a[key])?'':'disabled'}>Weiter</button></section>`;
+      app.innerHTML=`<section class="panel"><p class="eyebrow">${eyebrow}</p><h2 class="question">${title}<span class="period">?</span></h2><input class="field" id="text-step" maxlength="120" autocomplete="off" enterkeyhint="done" placeholder="${escapeHtml(placeholder)}" value="${escapeHtml(a[key])}" /><p class="counter" id="text-count">${a[key].length} / 120</p><button class="next" id="text-next" type="button" ${compact(a[key])?'':'disabled'}>${L().next}</button></section>`;
       const input=document.getElementById('text-step');const count=document.getElementById('text-count');const btn=document.getElementById('text-next');
       const done=()=>{const value=compact(input.value);if(!value)return;a[key]=value;track(event,{value,length:value.length});go(next,next==='final'?{sound:'success'}:{})};
       input.addEventListener('input',()=>{count.textContent=`${input.value.length} / 120`;btn.disabled=!compact(input.value)});
       input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();done()}});
       btn.addEventListener('click',done);
     }
-    function renderCurrent(){renderTextStep('current','FAST GESCHAFFT.','Auf welcher Quest bist du gerade','Ein Projekt, ein Ziel, etwas, das du lernst …',isRomantic()?'romantic-scene':'side','current_quest_completed')}
-    function renderSide(){renderTextStep('side','LETZTE FRAGE.','Und deine Sidequest','Was nebenbei noch läuft …','final','side_quest_completed')}
+    function renderCurrent(){renderTextStep('current',L().curEye,L().curH,L().curPh,isRomantic()?'romantic-scene':'side','current_quest_completed')}
+    function renderSide(){renderTextStep('side',L().sideEye,L().sideH,L().sidePh,'formation','side_quest_completed')}
+    function renderFormation(){renderTextStep('formation',L().formEye,L().formH,L().formPh,'final','formation_named')}
 
-    function travelerLine(){const a=state.answers;return a.identity+(a.identity==='She'&&a.path?` · ${a.path==='romantic'?'Secretly romantic':'Quest'}`:'')}
+    function travelerLine(){const a=state.answers;return (a.identity==='She'?L().she:L().he)+(a.identity==='She'&&a.path?` · ${a.path==='romantic'?L().rRom:L().rQuest}`:'')}
     function summaryRows(){
-      const a=state.answers;const rows=[['Traveler',travelerLine()]];
-      if(a.age)rows.push(['Age',a.age]);
-      if(a.city)rows.push(['City',a.city]);
-      if(a.talent)rows.push(['Secret talent',a.talent]);
+      const a=state.answers;const rows=[[L().rTraveler,travelerLine()]];
+      if(a.age)rows.push([L().rAge,a.age]);
+      if(a.city)rows.push([L().rCity,a.city]);
+      if(a.talent)rows.push([L().rTalent,a.talent]);
       if(isRomantic()){
-        rows.push(['Type',a.type]);
-        rows.push(['Perfect evening',a.vibe]);
-        rows.push(['Into',[a.height,a.build,a.match].filter(Boolean).join(' · ')]);
-        if(allInterests().length)rows.push(['Interests',allInterests().join(', ')]);
-        if(a.current)rows.push(['Current quest',a.current]);
-        if(a.scene)rows.push(['Where it starts',a.scene]);
+        rows.push([L().rType,pickText('type')]);
+        rows.push([L().rEvening,pickText('vibe')]);
+        rows.push([L().rInto,[a.height,a.build,pickText('match')].filter(Boolean).join(' · ')]);
+        if(allInterests().length)rows.push([L().rInterests,allInterests().join(', ')]);
+        if(a.current)rows.push([L().rCurrent,a.current]);
+        if(picks('scene').length)rows.push([L().rStart,pickText('scene')]);
       } else {
-        if(allInterests().length)rows.push(['Interests',allInterests().join(', ')]);
-        if(a.trick)rows.push(['Trick',a.trick]);
-        if(a.moral)rows.push(['Values',a.moral]);
-        if(a.quest)rows.push(['Adventure',a.quest]);
-        if(a.current)rows.push(['Current quest',a.current]);
-        if(a.side)rows.push(['Side quest',a.side]);
+        if(allInterests().length)rows.push([L().rInterests,allInterests().join(', ')]);
+        if(a.trick)rows.push([L().rTrick,a.trick]);
+        if(a.moral)rows.push([L().rValues,a.moral]);
+        if(picks('quest').length)rows.push([L().rAdventure,pickText('quest')]);
+        if(a.current)rows.push([L().rCurrent,a.current]);
+        if(a.side)rows.push([L().rSide,a.side]);
+        if(a.formation)rows.push([L().rFormation,a.formation]);
       }
       return rows;
     }
     function messageText(){
-      const lines=['Hey, ich hab deinen QR-Code gescannt.','',...summaryRows().map(([k,v])=>`${k}: ${v}`)];
-      if(isRomantic()&&state.appealed)lines.push('Appeal: accepted');
+      const lines=[L().msgHello,'',...summaryRows().map(([k,v])=>`${k}: ${v}`)];
+      if(isRomantic()&&state.appealed)lines.push(L().msgAppeal);
       return lines.join('\n');
     }
     function whatsappUrl(){return `https://wa.me/${PHONE}?text=${encodeURIComponent(messageText())}`}
-    function completeSurvey(){const a=state.answers;track('character_completed',{identity:a.identity,path:a.path,stats:a.stats,build_class:className(),interests:allInterests(),talent:a.talent,trick:a.trick,moral:a.moral,height:a.height,build:a.build,type:a.type,vibe:a.vibe,difficulty:a.difficulty,scene:a.scene,quest:a.quest,current:a.current,side:a.side,appealed:state.appealed})}
+    function completeSurvey(){const a=state.answers;track('character_completed',{identity:a.identity,path:a.path,stats:a.stats,build_class:className(),interests:allInterests(),talent:a.talent,trick:a.trick,moral:a.moral,height:a.height,build:a.build,type:picks('type'),vibe:picks('vibe'),match:picks('match'),difficulty:a.difficulty,scene:picks('scene'),quest:picks('quest'),current:a.current,side:a.side,formation:a.formation,appealed:state.appealed})}
 
     function renderFinal(){
       trackView('final',{path:state.answers.path,identity:state.answers.identity});completeSurvey();
       const rows=`<div class="result-card">${summaryRows().map(([k,v])=>`<div class="result-row"><span>${escapeHtml(k)}</span><span>${escapeHtml(v)}</span></div>`).join('')}</div>`;
       if(isRomantic()){
-        app.innerHTML=`<section class="panel final"><h1>Let's see where this goes<span class="period">.</span></h1>${rows}<a class="whatsapp" id="join" href="${whatsappUrl()}">Let's find out</a><p class="micro">Öffnet WhatsApp. Du entscheidest, was du schickst – vor dem Senden kannst du alles ändern.</p></section>`;
-        document.getElementById('join').addEventListener('click',()=>track('romantic_contact_clicked',{path:'romantic',scene:state.answers.scene}));
+        app.innerHTML=`<section class="panel final"><h1>${L().romFinalH}<span class="period">.</span></h1>${rows}<a class="whatsapp" id="join" href="${whatsappUrl()}">${L().romFinalBtn}</a><p class="micro">${L().micro}</p></section>`;
+        document.getElementById('join').addEventListener('click',()=>track('romantic_contact_clicked',{path:'romantic',scene:picks('scene')}));
       }else{
-        app.innerHTML=`<section class="panel final"><p class="eyebrow">CHARACTER ACCEPTED.</p><h1>Character complete<span class="period">.</span></h1><p class="lede">Geschafft.</p>${rows}<a class="whatsapp" id="join" href="${whatsappUrl()}">Erzähl mir von deiner Quest</a><p class="micro">Öffnet WhatsApp. Du entscheidest, was du schickst – vor dem Senden kannst du alles ändern.</p></section>`;
-        document.getElementById('join').addEventListener('click',()=>track('join_party_clicked',{path:'quest',quest:state.answers.quest}));
+        app.innerHTML=`<section class="panel final"><p class="eyebrow">${L().questFinalEye}</p><h1>${L().questFinalH}<span class="period">.</span></h1><p class="lede">${L().questFinalLede}</p>${rows}<a class="whatsapp" id="join" href="${whatsappUrl()}">${L().questFinalBtn}</a><p class="micro">${L().micro}</p></section>`;
+        document.getElementById('join').addEventListener('click',()=>track('join_party_clicked',{path:'quest',quest:picks('quest')}));
       }
     }
 
@@ -394,10 +405,12 @@
       else if(state.screen==='quest')renderQuest();
       else if(state.screen==='current')renderCurrent();
       else if(state.screen==='side')renderSide();
+      else if(state.screen==='formation')renderFormation();
       else if(state.screen==='final')renderFinal();
     }
 
     back.addEventListener('click',()=>{if(!state.history.length)return;let prev=state.history.pop();while(['denied','exception'].includes(prev)&&state.history.length){state.appealed=false;prev=state.history.pop()}track('back_clicked',{from:state.screen,to:prev});state.screen=prev;analytics.lastView='';sfx('select');render()});
+    document.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>setLang(b.dataset.lang)));
     sfxEl.addEventListener('click',()=>{state.sound=!state.sound;if(state.sound)sfx('unlock');track('sfx_toggled',{enabled:state.sound});updateHud()});
 
     track('game_started',{referrer:document.referrer?(()=>{try{return new URL(document.referrer).hostname}catch{return 'unknown'}})():'direct'});
